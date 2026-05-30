@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Loader2 } from "lucide-react";
+import AgencyStep from "@/components/steps/AgencyStep";
 import { toast } from "sonner";
 import formatTripEmail from "@/utils/formatTripEmail";
 
@@ -237,32 +238,7 @@ export default function TripFormAlt() {
           <button onClick={() => setContacts(cs => [...cs, { contact_name: "", contact_email: "", contact_phone: "", relationship: "family" }])} className="text-xs font-bold tracking-widest text-accent/50 hover:text-accent border border-dashed border-accent/30 rounded-lg w-full py-3 transition-colors">+ ADD CONTACT</button>
         </>
       );
-      case 6: return (
-        <>
-          <button
-            type="button"
-            onClick={() => setFormData(p => ({ ...p, share_with_agency: !p.share_with_agency }))}
-            className={`flex items-center gap-4 w-full p-5 border rounded-xl text-left transition-all mb-4 ${
-              formData.share_with_agency
-                ? "border-accent/50 bg-accent/10"
-                : "border-accent/20 bg-white/50"
-            }`}
-          >
-            <div className={`w-5 h-5 shrink-0 rounded border-2 flex items-center justify-center transition-all ${
-              formData.share_with_agency ? "bg-accent border-accent" : "border-foreground/30"
-            }`}>
-              {formData.share_with_agency && <svg viewBox="0 0 10 8" className="w-3 h-3 fill-white"><path d="M1 4l3 3 5-6"/></svg>}
-            </div>
-            <span className="text-sm font-medium text-foreground">Make this trip plan available to State Police / authorized public safety dashboard</span>
-          </button>
-
-          <div className="bg-accent/5 border border-accent/15 rounded-xl p-5 mb-5">
-            <p className="text-sm text-foreground/70 leading-relaxed">This does not create an emergency call. It stores the plan so responders can access it if you are reported missing or overdue.</p>
-          </div>
-
-          <p className="text-[10px] font-bold tracking-[0.2em] text-accent/40">DESTINATION: STATE POLICE / COUNTY SAR DASHBOARD</p>
-        </>
-      );
+      case 6: return <AgencyStep formData={formData} setFormData={setFormData} />;
       default: return null;
     }
   };
@@ -278,12 +254,13 @@ export default function TripFormAlt() {
       {/* Sidebar */}
       <div className="relative z-10 w-72 shrink-0 flex flex-col border-r border-white/15 bg-black/40 backdrop-blur-xl">
         {/* Big logo */}
-        <div className="px-6 pt-8 pb-6 border-b border-white/15">
+        <div className="px-6 pt-8 pb-6 border-b border-white/15 flex flex-col items-center text-center">
           <img
             src="https://media.base44.com/images/public/6a1b2bf2fc37b8175a269ec2/b59cfd204_ChatGPTImageMay30202601_47_28PM.png"
             alt="SafeReturn"
             className="h-28 w-auto object-contain"
           />
+          <span className="mt-2 text-white/70 text-sm font-semibold tracking-widest uppercase">SafeReturn</span>
         </div>
 
         {/* Steps nav */}
