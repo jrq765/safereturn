@@ -88,6 +88,13 @@ export default function TripFormAlt() {
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
+      const validContacts = contacts.filter(c => c.contact_name && c.contact_email);
+      if (validContacts.length === 0) {
+        toast.error("Please add at least one emergency contact.");
+        setSubmitting(false);
+        return;
+      }
+
       const planData = {
         ...formData,
         status: "active",
@@ -100,22 +107,82 @@ export default function TripFormAlt() {
       };
       const tripPlan = await base44.entities.TripPlan.create(planData);
       const portalUrl = `${window.location.origin}/family?id=${tripPlan.id}`;
-      const emailBody = formatTripEmail(formData, portalUrl);
-      const subject = `Trip Plan Filed: ${formData.primary_name || "Traveler"} — ${formData.park_name || "Outdoor Trip"}`;
-      const validContacts = contacts.filter(c => c.contact_name && c.contact_email);
-      await Promise.allSettled(validContacts.map(c =>
-        base44.entities.EmergencyContact.create({ trip_plan_id: tripPlan.id, contact_name: c.contact_name, contact_email: c.contact_email, contact_phone: c.contact_phone, relationship: c.relationship, notification_sent: true })
-      ));
-      await Promise.allSettled(validContacts.map(c =>
-        base44.functions.invoke('sendEmail', { to: c.contact_email, subject, body: emailBody })
-      ));
+
+      // Create emergency contact records
+      const contactIds = await Promise.allSettled(
+        validContacts.map(c =>
+          base44.entities.EmergencyContact.create({
+            trip_plan_id: tripPlan.id,
+            contact_name: c.contact_name,
+            contact_email: c.contact_email,
+            contact_phone: c.contact_phone,
+            relationship: c.relationship,
+            notification_sent: false,
+          })
+        )
+      );
+
+      // Build and send custom emergency contact email
+      const emergencyEmailBody = `
+        <div style="font-family: Inter, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+          <h2 style="color: #6BB2FD; margin-bottom: 20px;">SafeReturn: Trip Plan Filed</h2>
+          
+          <p style="margin-bottom: 16px;">
+            <strong>${formData.primary_name || "A traveler"}</strong> has filed a trip plan with SafeReturn and listed you as an emergency contact.
+          </p>
+          
+          <div style="background: #f5f5f5; border-left: 4px solid #6BB2FD; padding: 16px; margin: 20px 0;">
+            <p style="margin: 8px 0;"><strong>Destination:</strong> ${formData.park_name || "Outdoor Activity"}</p>
+            <p style="margin: 8px 0;"><strong>Expected Return:</strong> ${formData.expected_return_datetime ? moment(formData.expected_return_datetime).format("MMM D, YYYY [at] h:mm A") : "Not specified"}</p>
+            <p style="margin: 8px 0;"><strong>Activity Type:</strong> ${formData.travel_method || "—"}</p>
+          </div>
+          
+          <p style="margin-bottom: 16px;">
+            <strong>Monitor their trip status and location updates:</strong>
+          </p>
+          
+          <a href="${portalUrl}" style="display: inline-block; background-color: #6BB2FD; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; margin-bottom: 20px;">
+            VIEW TRIP PLAN & LOCATION
+          </a>
+          
+          <p style="color: #666; font-size: 14px; margin-top: 24px;">
+            Save this link. If they don't return by the expected time, you can use this portal to contact authorities or request assistance.
+          </p>
+          
+          <hr style="border: none; border-top: 1px solid #ddd; margin: 24px 0;" />
+          <p style="color: #999; font-size: 12px;">
+            You're receiving this because you're listed as an emergency contact for this trip plan.
+          </p>
+        </div>
+      `;
+
+      const subject = `🔔 Trip Plan Filed: ${formData.primary_name || "Traveler"} — ${formData.park_name || "Outdoor Trip"}`;
+      
+      // Send emails to all emergency contacts
+      const emailResults = await Promise.allSettled(
+        validContacts.map(c =>
+          base44.functions.invoke('sendEmail', {
+            to: c.contact_email,
+            subject,
+            body: emergencyEmailBody,
+          })
+        )
+      );
+
+      // Log results for debugging
+      const failedEmails = emailResults.filter(r => r.status === "rejected").length;
+      if (failedEmails > 0) {
+        console.warn(`${failedEmails} email(s) failed to send`);
+      }
+
+      toast.success(`Plan filed! ${validContacts.length} contact${validContacts.length !== 1 ? "s" : ""} notified.`);
       navigate("/confirmation?id=" + tripPlan.id);
     } catch (err) {
       toast.error("Something went wrong: " + err.message);
     } finally {
       setSubmitting(false);
     }
-  };
+  }
 
   const fmtDt = (v) => v ? moment(v).format("MMM D, YYYY [at] h:mm A") : "—";
 
