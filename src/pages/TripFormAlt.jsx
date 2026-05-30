@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Loader2, ArrowLeft } from "lucide-react";
+import { Loader2, ArrowLeft, Upload, X } from "lucide-react";
 import AgencyStep from "@/components/steps/AgencyStep";
 import { toast } from "sonner";
 import formatTripEmail from "@/utils/formatTripEmail";
@@ -158,24 +158,47 @@ export default function TripFormAlt() {
 
       const subject = `🔔 Trip Plan Filed: ${formData.primary_name || "Traveler"} — ${formData.park_name || "Outdoor Trip"}`;
       
-      // Send emails to all emergency contacts
-      const emailResults = await Promise.allSettled(
-        validContacts.map(c =>
-          base44.functions.invoke('sendEmail', {
-            to: c.contact_email,
-            subject,
-            body: emergencyEmailBody,
-          })
-        )
+      // Send emails and track results
+      const emailResults = await Promise.all(
+        validContacts.map(async (c) => {
+          try {
+            const result = await base44.functions.invoke('sendEmail', {
+              to: c.contact_email,
+              subject,
+              body: emergencyEmailBody,
+            });
+            return {
+              name: c.contact_name,
+              to: c.contact_email,
+              type: "contact",
+              success: result?.data?.success === true,
+              error: result?.data?.success === false ? result?.data?.error : null,
+            };
+          } catch (err) {
+            return {
+              name: c.contact_name,
+              to: c.contact_email,
+              type: "contact",
+              success: false,
+              error: err?.message || "Network error",
+            };
+          }
+        })
       );
 
-      // Log results for debugging
-      const failedEmails = emailResults.filter(r => r.status === "rejected").length;
-      if (failedEmails > 0) {
-        console.warn(`${failedEmails} email(s) failed to send`);
+      // Store results in sessionStorage for Confirmation page
+      sessionStorage.setItem(`email_results_${tripPlan.id}`, JSON.stringify(emailResults));
+
+      const successCount = emailResults.filter(r => r.success).length;
+      const failCount = emailResults.filter(r => !r.success).length;
+      
+      if (successCount > 0) {
+        toast.success(`Plan filed! ${successCount} email${successCount !== 1 ? "s" : ""} sent.`);
+      }
+      if (failCount > 0) {
+        toast.warning(`${failCount} email${failCount !== 1 ? "s" : ""} failed to send.`);
       }
 
-      toast.success(`Plan filed! ${validContacts.length} contact${validContacts.length !== 1 ? "s" : ""} notified.`);
       navigate("/confirmation?id=" + tripPlan.id);
     } catch (err) {
       toast.error("Something went wrong: " + err.message);
@@ -301,12 +324,44 @@ export default function TripFormAlt() {
                 <input className={inputCls} placeholder="License Plate" value={v.vehicle_license} onChange={e => setVehicles(vs => vs.map((x, j) => j === i ? { ...x, vehicle_license: e.target.value } : x))} />
               </div>
               <input className={`${inputCls} mb-3`} placeholder="Parking / Trailhead Location" value={v.vehicle_location} onChange={e => setVehicles(vs => vs.map((x, j) => j === i ? { ...x, vehicle_location: e.target.value } : x))} />
-              <div className="border-2 border-dashed border-accent/20 rounded-lg flex items-center justify-center h-20 text-xs text-foreground/30 font-medium tracking-widest cursor-pointer hover:border-accent/40 transition-colors">
-                + VEHICLE PHOTO (optional)
+              <div className="relative">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={async e => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    try {
+                      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+                      setVehicles(vs => vs.map((x, j) => j === i ? { ...x, vehicle_photo: file_url } : x));
+                      toast.success("Vehicle photo uploaded");
+                    } catch (err) {
+                      toast.error("Photo upload failed: " + err.message);
+                    }
+                  }}
+                  className="hidden"
+                  id={`vehicle-photo-${i}`}
+                />
+                <label
+                  htmlFor={`vehicle-photo-${i}`}
+                  className="border-2 border-dashed border-accent/20 rounded-lg flex items-center justify-center h-20 text-xs text-foreground/30 font-medium tracking-widest cursor-pointer hover:border-accent/40 transition-colors flex-col gap-2"
+                >
+                  {v.vehicle_photo ? (
+                    <>
+                      <img src={v.vehicle_photo} alt="Vehicle" className="h-16 w-auto object-contain rounded" />
+                      <span className="text-[10px] text-accent/50">CHANGE PHOTO</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4" />
+                      VEHICLE PHOTO (optional)
+                    </>
+                  )}
+                </label>
               </div>
             </div>
           ))}
-          <button onClick={() => setVehicles(vs => [...vs, { vehicle_make: "", vehicle_model: "", vehicle_color: "", vehicle_license: "", vehicle_location: "" }])} className="text-xs font-bold tracking-widest text-accent/50 hover:text-accent transition-colors">+ Add Vehicle</button>
+          <button onClick={() => setVehicles(vs => [...vs, { vehicle_make: "", vehicle_model: "", vehicle_color: "", vehicle_license: "", vehicle_location: "", vehicle_photo: "" }])} className="text-xs font-bold tracking-widest text-accent/50 hover:text-accent transition-colors">+ Add Vehicle</button>
         </>
       );
 
