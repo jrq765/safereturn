@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Send, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { Send, Loader2, ChevronUp } from "lucide-react";
 import StepWho from "@/components/steps/StepWho";
 import StepWhere from "@/components/steps/StepWhere";
 import StepWhen from "@/components/steps/StepWhen";
@@ -63,14 +63,13 @@ const INITIAL_DATA = {
 export default function TripForm() {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
+  const [direction, setDirection] = useState(1);
   const [formData, setFormData] = useState(INITIAL_DATA);
   const [contacts, setContacts] = useState([{ contact_name: "", contact_email: "", contact_phone: "", relationship: "family" }]);
   const [selectedAuthorities, setSelectedAuthorities] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [editId, setEditId] = useState(null);
   const [loadingEdit, setLoadingEdit] = useState(false);
-  const sectionRefs = useRef([]);
-  const containerRef = useRef(null);
 
   useEffect(() => {
     base44.auth.me().then(u => {
@@ -104,23 +103,11 @@ export default function TripForm() {
     }
   }, []);
 
-  const scrollToStep = (index) => {
-    sectionRefs.current[index]?.scrollIntoView({ behavior: "smooth" });
-    setStep(index);
+  const goTo = (next) => {
+    setDirection(next > step ? 1 : -1);
+    setStep(next);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
-
-  useEffect(() => {
-    const observers = sectionRefs.current.map((ref, i) => {
-      if (!ref) return null;
-      const obs = new IntersectionObserver(
-        ([entry]) => { if (entry.isIntersecting) setStep(i); },
-        { threshold: 0.5 }
-      );
-      obs.observe(ref);
-      return obs;
-    });
-    return () => observers.forEach(o => o && o.disconnect());
-  }, [loadingEdit]);
 
   const handleSubmit = async () => {
     setSubmitting(true);
@@ -198,52 +185,50 @@ export default function TripForm() {
     );
   }
 
+  const video = STEP_VIDEOS[step];
+
   return (
-    <div ref={containerRef} className="relative font-inter">
-      {/* Fixed nature video backgrounds — one per step */}
-      {STEP_VIDEOS.map((src, i) => (
-        <div
-          key={i}
-          className="fixed inset-0 z-0 overflow-hidden transition-opacity duration-1000"
-          style={{ opacity: step === i ? 1 : 0, pointerEvents: 'none', transition: 'opacity 1s ease' }}
+    <div className="relative min-h-screen font-inter overflow-hidden">
+
+      {/* Background — crossfades between steps */}
+      <AnimatePresence mode="sync">
+        <motion.div
+          key={step}
+          className="fixed inset-0 z-0"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.8 }}
         >
-          <video
-            autoPlay muted loop playsInline
-            className="w-full h-full object-cover"
-            style={{ opacity: 0.35 }}
-            poster={src.poster}
-          >
-            <source src={src.src} type="video/mp4" />
-          </video>
-          {/* Poster image shown instantly as fallback */}
           <img
-            src={src.poster}
+            src={video.poster}
             alt=""
             className="absolute inset-0 w-full h-full object-cover"
-            style={{ opacity: 0.25, zIndex: -1 }}
+            style={{ opacity: 0.8 }}
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background/80" />
-        </div>
-      ))}
+          <video
+            autoPlay muted loop playsInline
+            className="absolute inset-0 w-full h-full object-cover"
+            poster={video.poster}
+            style={{ opacity: 0.8 }}
+          >
+            <source src={video.src} type="video/mp4" />
+          </video>
+          <div className="absolute inset-0 bg-black/40" />
+        </motion.div>
+      </AnimatePresence>
 
-      {/* Side step dots */}
+      {/* Side dots */}
       <div className="fixed right-6 top-1/2 -translate-y-1/2 z-50 flex flex-col gap-3">
         {STEPS.map((s, i) => (
-          <button
-            key={s.id}
-            onClick={() => scrollToStep(i)}
-            className="group flex items-center gap-2 justify-end"
-            title={s.label}
-          >
-            <span className={`text-xs font-medium transition-all duration-300 ${step === i ? 'opacity-100 text-foreground' : 'opacity-0 text-muted-foreground'} group-hover:opacity-100`}>
-              {s.label}
-            </span>
-            <div className={`rounded-full transition-all duration-300 ${step === i ? 'w-3 h-3 bg-primary shadow-lg shadow-primary/40' : 'w-2 h-2 bg-muted-foreground/40 hover:bg-primary/60'}`} />
+          <button key={s.id} onClick={() => goTo(i)} title={s.label} className="group flex items-center gap-2 justify-end">
+            <span className={`text-xs font-medium transition-all duration-300 text-white ${step === i ? 'opacity-100' : 'opacity-0'} group-hover:opacity-100`}>{s.label}</span>
+            <div className={`rounded-full transition-all duration-300 ${step === i ? 'w-3 h-3 bg-white shadow-lg' : 'w-2 h-2 bg-white/40 hover:bg-white/70'}`} />
           </button>
         ))}
       </div>
 
-      {/* Step number top-left */}
+      {/* Step number */}
       <div className="fixed left-6 top-1/2 -translate-y-1/2 z-50">
         <AnimatePresence mode="wait">
           <motion.div
@@ -254,100 +239,87 @@ export default function TripForm() {
             transition={{ duration: 0.4 }}
             className="flex flex-col items-center gap-1"
           >
-            <span className="text-5xl font-bold text-primary/20 leading-none select-none">{STEPS[step]?.number}</span>
-            <div className="w-px h-12 bg-border" />
-            <span className="text-xs font-medium text-muted-foreground tracking-widest uppercase rotate-0">{STEPS[step]?.label}</span>
+            <span className="text-5xl font-bold text-white/30 leading-none select-none">{STEPS[step]?.number}</span>
+            <div className="w-px h-12 bg-white/30" />
+            <span className="text-xs font-medium text-white/60 tracking-widest uppercase">{STEPS[step]?.label}</span>
           </motion.div>
         </AnimatePresence>
       </div>
 
-      {/* Scroll sections */}
-      <div className="relative z-10">
-        {STEPS.map((s, i) => (
-          <section
-            key={s.id}
-            ref={el => sectionRefs.current[i] = el}
-            className="min-h-screen flex flex-col justify-center items-center px-4 py-24"
+      {/* Main content — zoom in on enter */}
+      <div className="relative z-10 min-h-screen flex flex-col justify-center items-center px-4 py-24">
+        <div className="w-full max-w-2xl mx-auto">
+
+          {/* Step header */}
+          <motion.div
+            key={`header-${step}`}
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="mb-6 flex items-center gap-3"
           >
-            <div className="w-full max-w-2xl mx-auto">
-              {/* Section header */}
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.3 }}
-                transition={{ duration: 0.6 }}
-                className="mb-8"
-              >
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="text-xs font-bold tracking-widest text-primary uppercase">{s.number}</span>
-                  <div className="flex-1 h-px bg-border" />
-                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-widest">{i + 1} of {STEPS.length}</span>
-                </div>
-              </motion.div>
+            <span className="text-xs font-bold tracking-widest text-white/70 uppercase">{STEPS[step]?.number}</span>
+            <div className="flex-1 h-px bg-white/20" />
+            <span className="text-xs font-medium text-white/50 uppercase tracking-widest">{step + 1} of {STEPS.length}</span>
+          </motion.div>
 
-              {/* Form card */}
-              <motion.div
-                initial={{ opacity: 0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.2 }}
-                transition={{ duration: 0.7, delay: 0.1 }}
-                className="bg-card/80 backdrop-blur-md border border-border/50 rounded-2xl shadow-xl p-6 md:p-8"
-              >
-                {stepContent[i]}
-              </motion.div>
+          {/* Form card — zooms in */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={step}
+              initial={{ opacity: 0, scale: 0.88 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 1.05 }}
+              transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+              className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-2xl p-6 md:p-8"
+            >
+              <div className="text-white [&_label]:text-white/90 [&_input]:bg-white/10 [&_input]:border-white/20 [&_input]:text-white [&_input]:placeholder:text-white/40 [&_textarea]:bg-white/10 [&_textarea]:border-white/20 [&_textarea]:text-white [&_textarea]:placeholder:text-white/40 [&_select]:bg-white/10 [&_select]:border-white/20 [&_select]:text-white [&_h2]:text-white [&_h3]:text-white [&_p]:text-white/80">
+                {stepContent[step]}
+              </div>
+            </motion.div>
+          </AnimatePresence>
 
-              {/* Continue arrow / Submit */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 0.4 }}
-                className="flex justify-center mt-8"
+          {/* Navigation */}
+          <motion.div
+            key={`nav-${step}`}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.2 }}
+            className="flex flex-col items-center gap-3 mt-8"
+          >
+            {step < STEPS.length - 1 ? (
+              <button
+                onClick={() => goTo(step + 1)}
+                className="flex items-center gap-3 px-10 py-4 text-base font-bold text-white rounded-2xl bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/30 transition-all hover:scale-105 active:scale-95"
               >
-                {i < STEPS.length - 1 ? (
-                  <button
-                    onClick={() => scrollToStep(i + 1)}
-                    className="flex flex-col items-center gap-1 text-muted-foreground hover:text-primary transition-colors group"
-                  >
-                    <span className="text-xs tracking-widest uppercase font-medium">Continue</span>
-                    <motion.div
-                      animate={{ y: [0, 5, 0] }}
-                      transition={{ repeat: Infinity, duration: 1.5 }}
-                    >
-                      <ChevronDown className="w-5 h-5" />
-                    </motion.div>
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleSubmit}
-                    disabled={submitting}
-                    className="relative flex items-center gap-3 px-10 py-4 text-base font-bold text-white rounded-2xl bg-primary overflow-hidden disabled:opacity-60"
-                    style={{ boxShadow: '0 0 30px rgba(91,164,245,0.5), 0 4px 20px rgba(0,0,0,0.2)' }}
-                  >
-                    <motion.span
-                      className="absolute inset-0 rounded-2xl bg-primary"
-                      animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0, 0.3] }}
-                      transition={{ repeat: Infinity, duration: 2 }}
-                    />
-                    <span className="relative z-10 flex items-center gap-2">
-                      {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-                      {submitting ? "Saving..." : "Save Plan & Notify Contacts"}
-                    </span>
-                  </button>
-                )}
-              </motion.div>
+                Continue to {STEPS[step + 1]?.label} →
+              </button>
+            ) : (
+              <button
+                onClick={handleSubmit}
+                disabled={submitting}
+                className="relative flex items-center gap-3 px-10 py-4 text-base font-bold text-white rounded-2xl bg-primary overflow-hidden disabled:opacity-60 hover:scale-105 active:scale-95 transition-all"
+                style={{ boxShadow: '0 0 30px rgba(91,164,245,0.6), 0 4px 20px rgba(0,0,0,0.3)' }}
+              >
+                <motion.span
+                  className="absolute inset-0 rounded-2xl bg-primary"
+                  animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0, 0.3] }}
+                  transition={{ repeat: Infinity, duration: 2 }}
+                />
+                <span className="relative z-10 flex items-center gap-2">
+                  {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                  {submitting ? "Saving..." : "Save Plan & Notify Contacts"}
+                </span>
+              </button>
+            )}
 
-              {/* Back button */}
-              {i > 0 && (
-                <div className="flex justify-center mt-3">
-                  <button onClick={() => scrollToStep(i - 1)} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
-                    <ChevronUp className="w-3.5 h-3.5" /> Back to {STEPS[i - 1].label}
-                  </button>
-                </div>
-              )}
-            </div>
-          </section>
-        ))}
+            {step > 0 && (
+              <button onClick={() => goTo(step - 1)} className="flex items-center gap-1 text-xs text-white/50 hover:text-white/80 transition-colors">
+                <ChevronUp className="w-3.5 h-3.5" /> Back to {STEPS[step - 1].label}
+              </button>
+            )}
+          </motion.div>
+        </div>
       </div>
     </div>
   );
