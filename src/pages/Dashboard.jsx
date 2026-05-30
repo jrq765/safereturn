@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Plus, MapPin, Clock, Trash2, CheckCircle, AlertTriangle, Loader2 } from "lucide-react";
+import { Plus, MapPin, Clock, Trash2, CheckCircle, AlertTriangle, Loader2, Pencil } from "lucide-react";
 import moment from "moment";
 import { toast } from "sonner";
 
@@ -37,13 +37,32 @@ export default function Dashboard() {
     },
   });
 
-  const markComplete = useMutation({
-    mutationFn: (id) => base44.entities.TripPlan.update(id, { status: "completed" }),
-    onSuccess: () => {
+  const handleReturn = async (plan) => {
+    try {
+      await base44.entities.TripPlan.update(plan.id, { status: "completed" });
       queryClient.invalidateQueries({ queryKey: ["trip-plans"] });
-      toast.success("Trip marked as completed — welcome back!");
-    },
-  });
+
+      const name = plan.primary_name || "The traveler";
+      const destination = plan.park_name || "their trip";
+      const subject = `✅ Safe Return: ${name} is back from ${destination}`;
+      const body = `Good news!\n\n${name} has safely returned from ${destination}.\n\nThis is an automated safe return notification from SafeReturn.\n\nNo further action is needed. Thank you for being an emergency contact.`;
+
+      const contacts = await base44.entities.EmergencyContact.filter({ trip_plan_id: plan.id });
+      for (const c of contacts) {
+        if (c.contact_email) {
+          await base44.integrations.Core.SendEmail({ to: c.contact_email, subject, body });
+        }
+      }
+      for (const a of (plan.authority_contacts || [])) {
+        if (a.email) {
+          await base44.integrations.Core.SendEmail({ to: a.email, subject, body });
+        }
+      }
+      toast.success(`Welcome back! Safe return emails sent to ${contacts.length + (plan.authority_contacts || []).filter(a => a.email).length} contact(s).`);
+    } catch (err) {
+      toast.error("Error: " + err.message);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -104,8 +123,13 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
+                  <Link to={`/new-plan?id=${plan.id}`}>
+                    <Button variant="outline" size="sm" className="text-muted-foreground">
+                      <Pencil className="w-4 h-4 mr-1" /> Edit
+                    </Button>
+                  </Link>
                   {plan.status === "active" && (
-                    <Button variant="outline" size="sm" onClick={() => markComplete.mutate(plan.id)} className="text-accent border-accent/30 hover:bg-accent/10">
+                    <Button variant="outline" size="sm" onClick={() => handleReturn(plan)} className="text-accent border-accent/30 hover:bg-accent/10">
                       <CheckCircle className="w-4 h-4 mr-1" /> {"I'm Back"}
                     </Button>
                   )}
