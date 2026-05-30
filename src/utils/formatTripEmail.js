@@ -11,6 +11,15 @@ export default function formatTripEmail(data, portalUrl) {
   <div style="background: #023E13; padding: 24px; text-align: center;">
     <h1 style="color: white; margin: 0; font-size: 24px;">🛡️ SafeReturn Trip Plan</h1>
   </div>
+
+  ${portalUrl ? `
+  <div style="background: #1a4a2e; padding: 20px; text-align: center; border-bottom: 3px solid #6BB2FD;">
+    <p style="color: #a8d8b0; margin: 0 0 6px 0; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">📱 Family Portal — Your emergency access link</p>
+    <p style="color: rgba(255,255,255,0.7); margin: 0 0 14px 0; font-size: 13px;">View live location updates, trip details, and alert authorities if needed.</p>
+    <a href="${portalUrl}" style="background: #6BB2FD; color: #023E13; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 15px; display: inline-block;">🔗 Open Family Portal →</a>
+    <p style="color: rgba(255,255,255,0.4); margin: 10px 0 0 0; font-size: 11px; word-break: break-all;">${portalUrl}</p>
+  </div>` : ''}
+
   <div style="padding: 24px; background: #F6FAFF; border: 1px solid #dde8f4;">
     <p style="color: #555; margin-bottom: 20px;">
       This trip plan was filed so you can take action quickly if something goes wrong.
@@ -88,12 +97,6 @@ export default function formatTripEmail(data, portalUrl) {
         please contact local authorities immediately.</strong>
       </p>
     </div>
-    ${portalUrl ? `
-    <div style="background: #e8f4fd; padding: 16px; border-radius: 8px; margin-top: 16px; text-align: center;">
-      <p style="margin: 0 0 8px 0; color: #023E13; font-weight: bold;">📱 Family Portal — Live Updates & Emergency Alert</p>
-      <p style="margin: 0 0 12px 0; color: #555; font-size: 13px;">Check the traveler's last known location and alert authorities directly from this link:</p>
-      <a href="${portalUrl}" style="background: #023E13; color: white; padding: 10px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">Open Family Portal →</a>
-    </div>` : ''}
   </div>
   <div style="background: #023E13; padding: 16px; text-align: center;">
     <p style="color: rgba(255,255,255,0.7); margin: 0; font-size: 12px;">Sent via SafeReturn — Outdoor Safety Made Simple</p>
