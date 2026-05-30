@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Loader2, ArrowLeft, Upload, X } from "lucide-react";
+import { Loader2, Upload, ChevronLeft, ChevronRight } from "lucide-react";
 import AgencyStep from "@/components/steps/AgencyStep";
 import { toast } from "sonner";
-import formatTripEmail from "@/utils/formatTripEmail";
 import moment from "moment";
 
 const STEPS = [
@@ -342,19 +341,19 @@ export default function TripFormAlt() {
                   className="hidden"
                   id={`vehicle-photo-${i}`}
                 />
-                <label
+                 <label
                   htmlFor={`vehicle-photo-${i}`}
-                  className="border-2 border-dashed border-accent/20 rounded-lg flex items-center justify-center h-20 text-xs text-foreground/30 font-medium tracking-widest cursor-pointer hover:border-accent/40 transition-colors flex-col gap-2"
+                  className="border-2 border-dashed border-accent/20 rounded-lg flex items-center justify-center h-24 text-xs text-foreground/40 font-medium cursor-pointer hover:border-accent/40 hover:bg-accent/5 transition-colors flex-col gap-2"
                 >
                   {v.vehicle_photo ? (
                     <>
-                      <img src={v.vehicle_photo} alt="Vehicle" className="h-16 w-auto object-contain rounded" />
-                      <span className="text-[10px] text-accent/50">CHANGE PHOTO</span>
+                      <img src={v.vehicle_photo} alt="Vehicle" className="h-20 w-auto object-contain rounded" />
+                      <span className="text-[10px] text-accent/50">CHANGE</span>
                     </>
                   ) : (
                     <>
-                      <Upload className="w-4 h-4" />
-                      VEHICLE PHOTO (optional)
+                      <Upload className="w-4 h-4 text-accent/50" />
+                      <span className="text-[11px]">Photo (optional)</span>
                     </>
                   )}
                 </label>
@@ -487,90 +486,68 @@ export default function TripFormAlt() {
   };
 
   return (
-    <div className="min-h-screen flex font-inter relative">
-      {/* Nature background */}
-      <div className="fixed inset-0 z-0">
-        <img src={BG} alt="" className="absolute inset-0 w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-black/40" />
-      </div>
-
-      {/* Sidebar */}
-      <div className="relative z-10 w-72 shrink-0 flex flex-col border-r border-white/15 bg-black/40 backdrop-blur-xl">
-        {/* Logo */}
-        <div className="px-6 pt-8 pb-6 border-b border-white/15 flex flex-col items-center text-center">
-          <img
-            src="https://media.base44.com/images/public/6a1b2bf2fc37b8175a269ec2/b59cfd204_ChatGPTImageMay30202601_47_28PM.png"
-            alt="SafeReturn"
-            className="h-28 w-auto object-contain"
-          />
-        </div>
-
-        {/* Steps nav */}
-        <div className="px-6 pt-6 flex-1">
-          <p className="text-[10px] font-bold tracking-[0.2em] mb-4 text-white/40">FILING PROGRESS</p>
-          <nav className="flex flex-col gap-1">
-            {STEPS.map((s, i) => (
-              <button
-                key={s.id}
-                onClick={() => goTo(i)}
-                className="text-left px-3 py-2.5 text-xs font-bold tracking-[0.12em] rounded-lg transition-all"
-                style={{
-                  background: i === step ? 'rgba(107,178,253,0.25)' : 'transparent',
-                  color: i === step ? '#6BB2FD' : i < step ? 'rgba(107,178,253,0.7)' : 'rgba(255,255,255,0.35)',
-                  borderLeft: i === step ? '2px solid #6BB2FD' : '2px solid transparent',
-                }}
-              >
-                {s.number} {s.label}
-              </button>
-            ))}
-          </nav>
-        </div>
-
-        {/* Back to home */}
-        <div className="px-6 pb-6">
-          <button
-            onClick={() => navigate("/")}
-            className="flex items-center gap-2 text-xs text-white/40 hover:text-white/70 transition-colors"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" /> Back to Home
-          </button>
-        </div>
-      </div>
-
+    <div className="min-h-screen flex flex-col bg-background">
       {/* Main content */}
-      <div className="relative z-10 flex-1 flex flex-col">
-        <div className="flex-1 m-4 ml-0 flex flex-col bg-white/80 backdrop-blur-2xl rounded-r-2xl overflow-hidden shadow-2xl">
-          <div className="flex-1 p-10 overflow-y-auto">
-            <p className="text-[10px] font-bold tracking-[0.2em] mb-2 text-accent/50">SECTION {STEPS[step].number}</p>
-            <h1 className="text-3xl font-black tracking-tight mb-4 text-accent">{STEPS[step].label}</h1>
-            <div className="border-t border-accent/20 mb-8" />
-            {renderStep()}
+      <div className="flex-1 flex flex-col items-center px-4 py-8">
+        <div className="w-full max-w-2xl">
+          {/* Header */}
+          <div className="mb-8">
+            <p className="text-xs font-bold tracking-[0.2em] text-accent/50 mb-2">STEP {STEPS[step].number} OF {STEPS.length}</p>
+            <h1 className="text-4xl font-bold text-accent mb-2">{STEPS[step].label}</h1>
+            <div className="h-1 w-16 bg-accent rounded-full" />
+          </div>
+
+          {/* Progress indicator */}
+          <div className="flex gap-2 mb-8">
+            {STEPS.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => goTo(i)}
+                className={`h-2 rounded-full transition-all ${
+                  i === step
+                    ? "bg-accent flex-1"
+                    : i < step
+                    ? "bg-accent/50 w-8"
+                    : "bg-accent/20 w-8"
+                }`}
+              />
+            ))}
+          </div>
+
+          {/* Form content */}
+          <div className="bg-white/70 backdrop-blur-sm border border-accent/20 rounded-xl p-8 mb-6">
+            <div className="text-foreground">
+              {renderStep()}
+            </div>
           </div>
 
           {/* Navigation */}
-          <div className="border-t border-accent/15 flex">
-            {step > 0 && (
+          <div className="flex gap-3 justify-between">
+            {step > 0 ? (
               <button
                 onClick={() => goTo(step - 1)}
-                className="px-8 py-5 text-xs font-black tracking-[0.25em] text-foreground/40 hover:text-foreground/70 border-r border-accent/15 transition-colors"
+                className="flex items-center gap-2 px-6 py-3 text-sm font-bold text-accent border border-accent/30 rounded-lg hover:bg-accent/10 transition-colors"
               >
-                BACK
+                <ChevronLeft className="w-4 h-4" /> Back
               </button>
+            ) : (
+              <div />
             )}
+
             {step < STEPS.length - 1 ? (
               <button
                 onClick={() => goTo(step + 1)}
-                className="flex-1 py-5 text-xs font-black tracking-[0.25em] text-white bg-accent hover:bg-accent/90 transition-colors"
+                className="flex items-center gap-2 px-6 py-3 text-sm font-bold text-white bg-accent rounded-lg hover:bg-accent/90 transition-colors"
               >
-                CONTINUE
+                Next <ChevronRight className="w-4 h-4" />
               </button>
             ) : (
               <button
                 onClick={handleSubmit}
                 disabled={submitting || !formData.confirmed_return}
-                className="flex-1 py-5 text-xs font-black tracking-[0.25em] text-white bg-accent hover:bg-accent/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-3"
+                className="flex items-center gap-2 px-8 py-3 text-sm font-bold text-white bg-accent rounded-lg hover:bg-accent/90 disabled:opacity-50 transition-colors"
               >
-                {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> FILING PLAN...</> : "CONFIRM & SAVE PLAN"}
+                {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save & Notify Contacts"}
               </button>
             )}
           </div>
