@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
@@ -32,36 +32,71 @@ export default function TripForm() {
   const [contacts, setContacts] = useState([{ contact_name: "", contact_email: "", contact_phone: "", relationship: "family" }]);
   const [selectedAuthorities, setSelectedAuthorities] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const [editId, setEditId] = useState(null);
+  const [loadingEdit, setLoadingEdit] = useState(false);
+
+  useEffect(() => {
+    // Auto-fill saved profile data for new plans
+    base44.auth.me().then(u => {
+      if (u.saved_primary_name || u.saved_primary_phone) {
+        setFormData(prev => ({
+          ...prev,
+          primary_name: prev.primary_name || u.saved_primary_name || "",
+          primary_phone: prev.primary_phone || u.saved_primary_phone || "",
+          primary_age: prev.primary_age || u.saved_primary_age || "",
+          primary_blood_type: prev.primary_blood_type || u.saved_primary_blood_type || "",
+          emergency_device_type: prev.emergency_device_type || u.saved_emergency_device || "",
+        }));
+      }
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("id");
+    if (id) {
+      setEditId(id);
+      setLoadingEdit(true);
+      base44.entities.TripPlan.get(id).then(plan => {
+        const { id: _id, created_date, updated_date, created_by, authority_contacts, ...rest } = plan;
+        setFormData({ ...INITIAL_DATA, ...rest });
+        if (authority_contacts) setSelectedAuthorities(authority_contacts);
+      }).catch(() => {}).finally(() => setLoadingEdit(false));
+      base44.entities.EmergencyContact.filter({ trip_plan_id: id }).then(rows => {
+        if (rows.length > 0) setContacts(rows.map(r => ({ contact_name: r.contact_name, contact_email: r.contact_email, contact_phone: r.contact_phone, relationship: r.relationship })));
+      }).catch(() => {});
+    }
+  }, []);
 
   const canProceed = () => true;
 
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
-      const tripPlan = await base44.entities.TripPlan.create({
-        ...formData,
-        status: "active",
-        authority_contacts: selectedAuthorities,
-      });
+      let tripPlan;
+      if (editId) {
+        tripPlan = await base44.entities.TripPlan.update(editId, { ...formData, authority_contacts: selectedAuthorities });
+        tripPlan = { id: editId };
+      } else {
+        tripPlan = await base44.entities.TripPlan.create({ ...formData, status: "active", authority_contacts: selectedAuthorities });
+      }
 
       const emailBody = formatTripEmail(formData);
       const subject = `Trip Plan Filed: ${formData.primary_name || "Traveler"} — ${formData.park_name || "Outdoor Trip"}`;
 
       const validContacts = contacts.filter(c => c.contact_name && c.contact_email);
       for (const contact of validContacts) {
-        await base44.entities.EmergencyContact.create({
-          trip_plan_id: tripPlan.id,
-          contact_name: contact.contact_name,
-          contact_email: contact.contact_email,
-          contact_phone: contact.contact_phone,
-          relationship: contact.relationship,
-          notification_sent: true,
-        });
-        await base44.integrations.Core.SendEmail({
-          to: contact.contact_email,
-          subject,
-          body: emailBody,
-        });
+        if (!editId) {
+          await base44.entities.EmergencyContact.create({
+            trip_plan_id: tripPlan.id,
+            contact_name: contact.contact_name,
+            contact_email: contact.contact_email,
+            contact_phone: contact.contact_phone,
+            relationship: contact.relationship,
+            notification_sent: true,
+          });
+        }
+        await base44.integrations.Core.SendEmail({ to: contact.contact_email, subject, body: emailBody });
       }
 
       for (const authority of selectedAuthorities) {
@@ -75,7 +110,7 @@ export default function TripForm() {
       }
 
       const totalSent = validContacts.length + selectedAuthorities.filter(a => a.email).length;
-      toast.success(totalSent > 0 ? `Trip plan filed! Emails sent to ${totalSent} contact(s).` : "Trip plan saved!");
+      toast.success(editId ? "Trip plan updated!" : (totalSent > 0 ? `Trip plan filed! Emails sent to ${totalSent} contact(s).` : "Trip plan saved!"));
       navigate("/confirmation?id=" + tripPlan.id);
     } catch (err) {
       toast.error("Something went wrong: " + err.message);
@@ -102,9 +137,10 @@ export default function TripForm() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 font-inter">
-      <FormProgress currentStep={step} />
+      {loadingEdit && <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>}
+      {!loadingEdit && <FormProgress currentStep={step} />}
       <div className="min-h-[400px]">
-        {stepComponents[step]}
+        {!loadingEdit && stepComponents[step]}
       </div>
       <div className="flex items-center justify-between mt-8 pt-6 border-t border-border">
         <Button variant="outline" onClick={() => setStep(s => s - 1)} disabled={step === 0} className="gap-2">

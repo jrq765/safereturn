@@ -16,6 +16,7 @@ import Home from './pages/Home';
 import TripForm from './pages/TripForm';
 import Dashboard from './pages/Dashboard';
 import Confirmation from './pages/Confirmation';
+import Profile from './pages/Profile';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -53,6 +54,7 @@ const AuthenticatedApp = () => {
           <Route path="/new-plan" element={<TripForm />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/confirmation" element={<Confirmation />} />
+          <Route path="/profile" element={<Profile />} />
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />

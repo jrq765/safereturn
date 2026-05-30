@@ -1,0 +1,29 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "user"
+      ],
+      "default": "user"
+    },
+    "saved_primary_name": {
+      "type": "string"
+    },
+    "saved_primary_phone": {
+      "type": "string"
+    },
+    "saved_primary_age": {
+      "type": "string"
+    },
+    "saved_primary_blood_type": {
+      "type": "string"
+    },
+    "saved_emergency_device": {
+      "type": "string"
+    }
+  }
+}
