@@ -107,13 +107,13 @@ export default function TripForm() {
           name: contact.contact_name,
           to: contact.contact_email,
           type: "contact",
-          promise: base44.integrations.Core.SendEmail({ to: contact.contact_email, subject, body: emailBody }),
+          promise: base44.functions.invoke('sendEmail', { to: contact.contact_email, subject, body: emailBody }),
         })),
         ...selectedAuthorities.filter(a => a.email).map(authority => ({
           name: authority.name,
           to: authority.email,
           type: "authority",
-          promise: base44.integrations.Core.SendEmail({
+          promise: base44.functions.invoke('sendEmail', {
             to: authority.email,
             subject: `[SAR Trip Plan] ${formData.primary_name || "Traveler"} — ${formData.park_name || "Outdoor Trip"}`,
             body: emailBody,
@@ -123,7 +123,7 @@ export default function TripForm() {
           name: "You (confirmation copy)",
           to: user.email,
           type: "self",
-          promise: base44.integrations.Core.SendEmail({
+          promise: base44.functions.invoke('sendEmail', {
             to: user.email,
             subject: `[Your Copy] ${subject}`,
             body: emailBody + `<br/><br/><hr/><p style="color:#888;font-size:12px">This is your confirmation copy of the trip plan notification sent to your emergency contacts and authorities.</p>`,
