@@ -29,13 +29,14 @@ const INITIAL_DATA = {
 function Field({ label, children }) {
   return (
     <div className="mb-6">
-      <label className="block text-xs font-bold tracking-[0.15em] text-neutral-500 mb-2 uppercase">{label}</label>
+      <label className="block text-xs font-bold tracking-[0.15em] mb-2 uppercase" style={{color: '#023E13', opacity: 0.6}}>{label}</label>
       {children}
     </div>
   );
 }
 
-const inputCls = "w-full bg-white border border-neutral-300 text-black text-sm px-4 py-3 focus:outline-none focus:border-black transition-colors font-mono";
+const inputCls = "w-full bg-white text-sm px-4 py-3 focus:outline-none transition-colors font-inter" +
+  " border border-[#c8d8c0] focus:border-[#023E13] text-[#023E13] placeholder:text-[#023E13]/30";
 
 export default function TripFormAlt() {
   const navigate = useNavigate();
@@ -202,22 +203,33 @@ export default function TripFormAlt() {
   };
 
   return (
-    <div className="min-h-screen bg-black flex font-mono">
+    <div className="min-h-screen flex font-inter" style={{background: '#011a09'}}>
       {/* Sidebar */}
-      <div className="w-64 shrink-0 p-8 flex flex-col">
-        <p className="text-[10px] font-bold tracking-[0.2em] text-neutral-600 mb-6">FILING PROGRESS</p>
+      <div className="w-64 shrink-0 p-8 flex flex-col border-r" style={{borderColor: 'rgba(107,178,253,0.15)'}}>
+        <div className="mb-8">
+          <img
+            src="https://media.base44.com/images/public/6a1b2bf2fc37b8175a269ec2/b59cfd204_ChatGPTImageMay30202601_47_28PM.png"
+            alt="SafeReturn"
+            className="h-14 w-auto object-contain"
+          />
+        </div>
+        <p className="text-[10px] font-bold tracking-[0.2em] mb-6" style={{color: 'rgba(107,178,253,0.5)'}}>FILING PROGRESS</p>
         <nav className="flex flex-col gap-1">
           {STEPS.map((s, i) => (
             <button
               key={s.id}
               onClick={() => goTo(i)}
-              className={`text-left px-3 py-2 text-xs font-bold tracking-[0.12em] transition-colors ${
+              className={`text-left px-3 py-2 text-xs font-bold tracking-[0.12em] transition-all ${
                 i === step
-                  ? "bg-white text-black"
+                  ? "text-black"
                   : i < step
-                  ? "text-neutral-400 hover:text-white"
-                  : "text-neutral-700 hover:text-neutral-400"
+                  ? "hover:text-white"
+                  : "hover:opacity-70"
               }`}
+              style={{
+                background: i === step ? '#6BB2FD' : 'transparent',
+                color: i === step ? '#011a09' : i < step ? '#6BB2FD' : 'rgba(255,255,255,0.35)',
+              }}
             >
               {s.number} {s.label}
             </button>
@@ -225,27 +237,28 @@ export default function TripFormAlt() {
         </nav>
 
         <div className="mt-auto pt-8">
-          <div className="text-[10px] text-neutral-700 tracking-widest">SAFERETURN</div>
-          <div className="text-[10px] text-neutral-700">TRIP FILING SYSTEM</div>
+          <div className="text-[10px] tracking-widest" style={{color: 'rgba(107,178,253,0.3)'}}>SAFERETURN</div>
+          <div className="text-[10px]" style={{color: 'rgba(107,178,253,0.3)'}}>TRIP FILING SYSTEM</div>
         </div>
       </div>
 
       {/* Main content */}
       <div className="flex-1 flex flex-col">
-        <div className="flex-1 bg-neutral-100 m-4 ml-0 flex flex-col" style={{ clipPath: "polygon(12px 0, 100% 0, 100% 100%, 0 100%, 0 12px)" }}>
+        <div className="flex-1 m-4 ml-0 flex flex-col" style={{ background: '#f5f7f2', clipPath: "polygon(12px 0, 100% 0, 100% 100%, 0 100%, 0 12px)" }}>
           <div className="flex-1 p-10 overflow-y-auto">
-            <p className="text-[10px] font-bold tracking-[0.2em] text-neutral-500 mb-2">SECTION {STEPS[step].number}</p>
-            <h1 className="text-3xl font-black tracking-tight text-black mb-4">{STEPS[step].label}</h1>
-            <div className="border-t border-black mb-8" />
+            <p className="text-[10px] font-bold tracking-[0.2em] mb-2" style={{color: '#023E13', opacity: 0.5}}>SECTION {STEPS[step].number}</p>
+            <h1 className="text-3xl font-black tracking-tight mb-4" style={{color: '#023E13'}}>{STEPS[step].label}</h1>
+            <div className="border-t mb-8" style={{borderColor: '#023E13'}} />
             {renderStep()}
           </div>
 
           {/* Continue button */}
-          <div className="border-t border-neutral-300">
+          <div className="border-t" style={{borderColor: '#c8d8c0'}}>
             {step < STEPS.length - 1 ? (
               <button
                 onClick={() => goTo(step + 1)}
-                className="w-full py-5 text-xs font-black tracking-[0.25em] text-white bg-black hover:bg-neutral-800 transition-colors"
+                className="w-full py-5 text-xs font-black tracking-[0.25em] text-white transition-colors hover:opacity-90"
+                style={{background: '#023E13'}}
               >
                 CONTINUE
               </button>
@@ -253,7 +266,8 @@ export default function TripFormAlt() {
               <button
                 onClick={handleSubmit}
                 disabled={submitting}
-                className="w-full py-5 text-xs font-black tracking-[0.25em] text-white bg-black hover:bg-neutral-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-3"
+                className="w-full py-5 text-xs font-black tracking-[0.25em] text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-3 hover:opacity-90"
+                style={{background: '#023E13'}}
               >
                 {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> FILING PLAN...</> : "FILE TRIP PLAN"}
               </button>
