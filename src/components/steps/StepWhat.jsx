@@ -35,9 +35,9 @@ export default function StepWhat({ data, onChange }) {
         </div>
       </div>
 
-      <div className="bg-card rounded-xl border border-border p-5 space-y-4">
+      <div className="bg-white/10 rounded-xl border border-white/20 p-5 space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-sm uppercase tracking-wide text-accent">Activities</h3>
+          <h3 className="font-semibold text-sm uppercase tracking-wide text-blue-300">Activities</h3>
           <Button type="button" variant="outline" size="sm" onClick={addActivity}>
             <Plus className="w-4 h-4 mr-1" /> Add Activity
           </Button>
@@ -46,9 +46,9 @@ export default function StepWhat({ data, onChange }) {
           <p className="text-sm text-muted-foreground italic">{"No activities yet — tap \"Add Activity\" above."}</p>
         )}
         {(data.activities || []).map((act, i) => (
-          <div key={i} className="p-4 bg-muted/50 rounded-lg space-y-3">
+          <div key={i} className="p-4 bg-white/10 rounded-lg border border-white/15 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-foreground">Activity {i + 1}</span>
+              <span className="text-sm font-medium text-white">Activity {i + 1}</span>
               <Button type="button" variant="ghost" size="icon" onClick={() => removeActivity(i)}>
                 <Trash2 className="w-4 h-4 text-destructive" />
               </Button>
@@ -79,9 +79,9 @@ export default function StepWhat({ data, onChange }) {
         ))}
       </div>
 
-      <div className="bg-card rounded-xl border border-border p-5 space-y-4">
-        <h3 className="font-semibold text-sm uppercase tracking-wide text-accent">Backup Plan</h3>
-        <p className="text-xs text-muted-foreground">In case your primary plan changes</p>
+      <div className="bg-white/10 rounded-xl border border-white/20 p-5 space-y-4">
+        <h3 className="font-semibold text-sm uppercase tracking-wide text-blue-300">Backup Plan</h3>
+        <p className="text-xs text-white/60">In case your primary plan changes</p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="md:col-span-2 space-y-1">
             <Label className="text-xs">Activity</Label>
