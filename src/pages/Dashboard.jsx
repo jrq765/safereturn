@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Plus, MapPin, Clock, Trash2, CheckCircle, AlertTriangle, Loader2, Pencil } from "lucide-react";
+import { Plus, MapPin, Clock, Trash2, CheckCircle, AlertTriangle, Loader2, Pencil, Navigation, Copy } from "lucide-react";
 import moment from "moment";
 import { toast } from "sonner";
 
@@ -28,6 +28,31 @@ export default function Dashboard() {
     queryKey: ["trip-plans"],
     queryFn: () => base44.entities.TripPlan.list("-created_date"),
   });
+
+  const shareLocation = async (planId) => {
+    if (!navigator.geolocation) { toast.error("Geolocation not supported on this device."); return; }
+    toast.info("Getting your location...");
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        await base44.entities.TripPlan.update(planId, {
+          last_location_lat: latitude,
+          last_location_lng: longitude,
+          last_location_time: new Date().toISOString(),
+          last_location_label: `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`,
+        });
+        queryClient.invalidateQueries({ queryKey: ["trip-plans"] });
+        toast.success("Location shared with your emergency contacts!");
+      },
+      () => toast.error("Could not get location. Please enable GPS.")
+    );
+  };
+
+  const copyPortalLink = (planId) => {
+    const url = `${window.location.origin}/family?id=${planId}`;
+    navigator.clipboard.writeText(url);
+    toast.success("Family portal link copied!");
+  };
 
   const deletePlan = useMutation({
     mutationFn: (id) => base44.entities.TripPlan.delete(id),
@@ -123,6 +148,14 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
+                  <button onClick={() => copyPortalLink(plan.id)} title="Copy family portal link" className="p-2 rounded-lg border border-white/20 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
+                    <Copy className="w-4 h-4" />
+                  </button>
+                  {plan.status === "active" && (
+                    <button onClick={() => shareLocation(plan.id)} title="Share your GPS location" className="p-2 rounded-lg border border-blue-200 hover:bg-blue-50 text-blue-500 transition-colors">
+                      <Navigation className="w-4 h-4" />
+                    </button>
+                  )}
                   <Link to={`/new-plan?id=${plan.id}`}>
                     <Button variant="outline" size="sm" className="text-muted-foreground">
                       <Pencil className="w-4 h-4 mr-1" /> Edit

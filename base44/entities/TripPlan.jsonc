@@ -21,6 +21,9 @@
     "primary_phone": {
       "type": "string"
     },
+    "primary_blood_type": {
+      "type": "string"
+    },
     "emergency_device_type": {
       "type": "string"
     },
@@ -142,6 +145,18 @@
     "other_equipment": {
       "type": "string"
     },
+    "last_location_lat": {
+      "type": "number"
+    },
+    "last_location_lng": {
+      "type": "number"
+    },
+    "last_location_time": {
+      "type": "string"
+    },
+    "last_location_label": {
+      "type": "string"
+    },
     "authority_contacts": {
       "type": "array",
       "items": {
@@ -172,8 +187,5 @@
       }
     }
   },
-  "required": [
-    "primary_name",
-    "primary_phone"
-  ]
+  "required": []
 }

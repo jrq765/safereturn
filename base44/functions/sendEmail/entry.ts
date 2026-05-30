@@ -2,13 +2,6 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 Deno.serve(async (req) => {
   try {
-    const base44 = createClientFromRequest(req);
-    // Auth check — skip 401 guard so emails can be sent during submit flow
-    // Still validate by attempting auth, but don't block if session timing causes issues
-    let user = null;
-    try { user = await base44.auth.me(); } catch (_) {}
-    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-
     const { to, subject, body } = await req.json();
     if (!to || !subject || !body) {
       return Response.json({ error: 'Missing required fields: to, subject, body' }, { status: 400 });

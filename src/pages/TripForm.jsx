@@ -121,7 +121,8 @@ export default function TripForm() {
       }
 
       const user = await base44.auth.me();
-      const emailBody = formatTripEmail(formData);
+      const portalUrl = `${window.location.origin}/family?id=${tripPlan.id}`;
+      const emailBody = formatTripEmail(formData, portalUrl);
       const subject = `Trip Plan Filed: ${formData.primary_name || "Traveler"} — ${formData.park_name || "Outdoor Trip"}`;
       const validContacts = contacts.filter(c => c.contact_name && c.contact_email);
 

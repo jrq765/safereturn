@@ -5,7 +5,7 @@ function fmt(dt) {
   return moment(dt).format("MMM D, YYYY h:mm A");
 }
 
-export default function formatTripEmail(data) {
+export default function formatTripEmail(data, portalUrl) {
   let body = `
 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #023E13;">
   <div style="background: #023E13; padding: 24px; text-align: center;">
@@ -88,6 +88,12 @@ export default function formatTripEmail(data) {
         please contact local authorities immediately.</strong>
       </p>
     </div>
+    ${portalUrl ? `
+    <div style="background: #e8f4fd; padding: 16px; border-radius: 8px; margin-top: 16px; text-align: center;">
+      <p style="margin: 0 0 8px 0; color: #023E13; font-weight: bold;">📱 Family Portal — Live Updates & Emergency Alert</p>
+      <p style="margin: 0 0 12px 0; color: #555; font-size: 13px;">Check the traveler's last known location and alert authorities directly from this link:</p>
+      <a href="${portalUrl}" style="background: #023E13; color: white; padding: 10px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">Open Family Portal →</a>
+    </div>` : ''}
   </div>
   <div style="background: #023E13; padding: 16px; text-align: center;">
     <p style="color: rgba(255,255,255,0.7); margin: 0; font-size: 12px;">Sent via SafeReturn — Outdoor Safety Made Simple</p>

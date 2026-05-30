@@ -17,6 +17,7 @@ import TripForm from './pages/TripForm';
 import Dashboard from './pages/Dashboard';
 import Confirmation from './pages/Confirmation';
 import Profile from './pages/Profile';
+import FamilyPortal from './pages/FamilyPortal';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -44,6 +45,7 @@ const AuthenticatedApp = () => {
   // Render the main app
   return (
     <Routes>
+      <Route path="/family" element={<FamilyPortal />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
