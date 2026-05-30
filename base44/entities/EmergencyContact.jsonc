@@ -1,0 +1,30 @@
+{
+  "name": "EmergencyContact",
+  "type": "object",
+  "properties": {
+    "trip_plan_id": {
+      "type": "string"
+    },
+    "contact_name": {
+      "type": "string"
+    },
+    "contact_email": {
+      "type": "string"
+    },
+    "contact_phone": {
+      "type": "string"
+    },
+    "relationship": {
+      "type": "string"
+    },
+    "notification_sent": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "trip_plan_id",
+    "contact_name",
+    "contact_email"
+  ]
+}

@@ -1,0 +1,150 @@
+{
+  "name": "TripPlan",
+  "type": "object",
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "completed",
+        "overdue",
+        "cancelled"
+      ],
+      "default": "active"
+    },
+    "primary_name": {
+      "type": "string"
+    },
+    "primary_age": {
+      "type": "string"
+    },
+    "primary_phone": {
+      "type": "string"
+    },
+    "emergency_device_type": {
+      "type": "string"
+    },
+    "other_contacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "age": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "total_participants": {
+      "type": "number"
+    },
+    "park_name": {
+      "type": "string"
+    },
+    "visitor_center": {
+      "type": "string"
+    },
+    "travel_method": {
+      "type": "string"
+    },
+    "accommodation": {
+      "type": "string"
+    },
+    "arrival_datetime": {
+      "type": "string"
+    },
+    "departure_datetime": {
+      "type": "string"
+    },
+    "expected_return_datetime": {
+      "type": "string"
+    },
+    "activities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "activity": {
+            "type": "string"
+          },
+          "start_location": {
+            "type": "string"
+          },
+          "start_datetime": {
+            "type": "string"
+          },
+          "end_location": {
+            "type": "string"
+          },
+          "end_datetime": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "backup_activity": {
+      "type": "string"
+    },
+    "backup_start_location": {
+      "type": "string"
+    },
+    "backup_start_datetime": {
+      "type": "string"
+    },
+    "backup_end_location": {
+      "type": "string"
+    },
+    "backup_end_datetime": {
+      "type": "string"
+    },
+    "vehicle_make": {
+      "type": "string"
+    },
+    "vehicle_model": {
+      "type": "string"
+    },
+    "vehicle_color": {
+      "type": "string"
+    },
+    "vehicle_license": {
+      "type": "string"
+    },
+    "vessel_make": {
+      "type": "string"
+    },
+    "vessel_model": {
+      "type": "string"
+    },
+    "vessel_color": {
+      "type": "string"
+    },
+    "bicycle_make": {
+      "type": "string"
+    },
+    "bicycle_model": {
+      "type": "string"
+    },
+    "bicycle_color": {
+      "type": "string"
+    },
+    "camping_tent": {
+      "type": "string"
+    },
+    "backpack_description": {
+      "type": "string"
+    },
+    "other_equipment": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "primary_name",
+    "primary_phone"
+  ]
+}
