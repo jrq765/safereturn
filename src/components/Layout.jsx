@@ -2,7 +2,7 @@ import { Outlet, Link } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
-import { Shield, Menu, X, LogOut, User, ChevronDown } from "lucide-react";
+import { Menu, X, LogOut, User, ChevronDown } from "lucide-react";
 import { useState as useDropdown } from "react";
 import { useState, useEffect } from "react";
 
@@ -20,10 +20,11 @@ export default function Layout() {
       <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-lg bg-accent flex items-center justify-center">
-              <Shield className="w-5 h-5 text-accent-foreground" />
-            </div>
-            <span className="text-lg font-bold text-foreground">SafeReturn</span>
+            <img
+              src="https://media.base44.com/images/public/6a1b2bf2fc37b8175a269ec2/a824c46e8_ChatGPTImageMay30202601_26_56PM.png"
+              alt="SafeReturn"
+              className="h-10 w-auto object-contain"
+            />
           </Link>
 
           <nav className="hidden md:flex items-center gap-6">
