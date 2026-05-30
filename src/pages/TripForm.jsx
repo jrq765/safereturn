@@ -86,38 +86,40 @@ export default function TripForm() {
       const subject = `Trip Plan Filed: ${formData.primary_name || "Traveler"} — ${formData.park_name || "Outdoor Trip"}`;
 
       const validContacts = contacts.filter(c => c.contact_name && c.contact_email);
-      for (const contact of validContacts) {
-        if (!editId) {
-          await base44.entities.EmergencyContact.create({
+
+      // Save contacts to DB (non-blocking)
+      if (!editId) {
+        await Promise.allSettled(validContacts.map(contact =>
+          base44.entities.EmergencyContact.create({
             trip_plan_id: tripPlan.id,
             contact_name: contact.contact_name,
             contact_email: contact.contact_email,
             contact_phone: contact.contact_phone,
             relationship: contact.relationship,
             notification_sent: true,
-          });
-        }
-        await base44.integrations.Core.SendEmail({ to: contact.contact_email, subject, body: emailBody });
+          })
+        ));
       }
 
-      for (const authority of selectedAuthorities) {
-        if (authority.email) {
-          await base44.integrations.Core.SendEmail({
+      // Send all emails in parallel, failures don't block navigation
+      const emailPromises = [
+        ...validContacts.map(contact =>
+          base44.integrations.Core.SendEmail({ to: contact.contact_email, subject, body: emailBody })
+        ),
+        ...selectedAuthorities.filter(a => a.email).map(authority =>
+          base44.integrations.Core.SendEmail({
             to: authority.email,
             subject: `[SAR Trip Plan] ${formData.primary_name || "Traveler"} — ${formData.park_name || "Outdoor Trip"}`,
             body: emailBody,
-          });
-        }
-      }
-
-      // Forward copy to the submitting user
-      if (user?.email) {
-        await base44.integrations.Core.SendEmail({
+          })
+        ),
+        ...(user?.email ? [base44.integrations.Core.SendEmail({
           to: user.email,
           subject: `[Your Copy] ${subject}`,
           body: emailBody + `<br/><br/><hr/><p style="color:#888;font-size:12px">This is your confirmation copy of the trip plan notification sent to your emergency contacts and authorities.</p>`,
-        });
-      }
+        })] : []),
+      ];
+      await Promise.allSettled(emailPromises);
 
       const totalSent = validContacts.length + selectedAuthorities.filter(a => a.email).length;
       toast.success(editId ? "Trip plan updated!" : (totalSent > 0 ? `Trip plan filed! Emails sent to ${totalSent} contact(s).` : "Trip plan saved!"));
