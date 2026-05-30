@@ -12,6 +12,14 @@ const STEPS = [
   { id: "vehicle",   label: "VEHICLE",            number: "04" },
   { id: "gear",      label: "GEAR",               number: "05" },
   { id: "contacts",  label: "CONTACTS",           number: "06" },
+  { id: "agency",    label: "AGENCY",             number: "07" },
+];
+
+const GEAR_ITEMS = [
+  "Water", "Food", "First aid kit",
+  "Shelter", "Fire starter", "Extra clothing",
+  "Flashlight / headlamp", "Map / compass", "Phone",
+  "Satellite communicator", "Life jacket", "Knife / multitool",
 ];
 
 const INITIAL_DATA = {
@@ -24,6 +32,8 @@ const INITIAL_DATA = {
   vessel_make: "", vessel_model: "", vessel_color: "",
   bicycle_make: "", bicycle_model: "", bicycle_color: "",
   camping_tent: "", backpack_description: "", other_equipment: "",
+  gear_checklist: [],
+  share_with_agency: true,
 };
 
 const BG = "https://images.unsplash.com/photo-1448375240586-882707db888b?w=1920&auto=format&fit=crop";
@@ -160,19 +170,46 @@ export default function TripFormAlt() {
           </Field>
         </>
       );
-      case 4: return (
-        <>
-          <Field label="Tent Description">
-            <input className={inputCls} placeholder="Brand, color, capacity" value={formData.camping_tent} onChange={upd("camping_tent")} />
-          </Field>
-          <Field label="Backpack Description">
-            <input className={inputCls} placeholder="Color, size, brand" value={formData.backpack_description} onChange={upd("backpack_description")} />
-          </Field>
-          <Field label="Other Notable Equipment">
-            <textarea className={`${inputCls} h-24 resize-none`} placeholder="List any other gear that may aid identification or rescue" value={formData.other_equipment} onChange={upd("other_equipment")} />
-          </Field>
-        </>
-      );
+      case 4: {
+        const toggleGear = (item) => {
+          const list = formData.gear_checklist || [];
+          setFormData(p => ({
+            ...p,
+            gear_checklist: list.includes(item) ? list.filter(g => g !== item) : [...list, item],
+          }));
+        };
+        return (
+          <>
+            <div className="grid grid-cols-3 gap-2 mb-6">
+              {GEAR_ITEMS.map(item => {
+                const checked = (formData.gear_checklist || []).includes(item);
+                return (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => toggleGear(item)}
+                    className={`flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-left transition-all ${
+                      checked
+                        ? "border-accent bg-accent/10 text-accent"
+                        : "border-accent/20 bg-white/50 text-foreground/70 hover:border-accent/40"
+                    }`}
+                  >
+                    <div className={`w-4 h-4 shrink-0 rounded border flex items-center justify-center transition-all ${
+                      checked ? "bg-accent border-accent" : "border-foreground/30"
+                    }`}>
+                      {checked && <svg viewBox="0 0 10 8" className="w-2.5 h-2.5 fill-white"><path d="M1 4l3 3 5-6"/></svg>}
+                    </div>
+                    {item}
+                  </button>
+                );
+              })}
+            </div>
+            <Field label="Other Notable Equipment">
+              <textarea className={`${inputCls} h-20 resize-none`} placeholder="Any other gear that may aid identification or rescue" value={formData.other_equipment} onChange={upd("other_equipment")} />
+            </Field>
+          </>
+        );
+      }
       case 5: return (
         <>
           <p className="text-xs text-foreground/50 mb-5 tracking-wide">These contacts will receive your trip plan and the family monitoring portal link via email.</p>
@@ -198,6 +235,32 @@ export default function TripFormAlt() {
             </div>
           ))}
           <button onClick={() => setContacts(cs => [...cs, { contact_name: "", contact_email: "", contact_phone: "", relationship: "family" }])} className="text-xs font-bold tracking-widest text-accent/50 hover:text-accent border border-dashed border-accent/30 rounded-lg w-full py-3 transition-colors">+ ADD CONTACT</button>
+        </>
+      );
+      case 6: return (
+        <>
+          <button
+            type="button"
+            onClick={() => setFormData(p => ({ ...p, share_with_agency: !p.share_with_agency }))}
+            className={`flex items-center gap-4 w-full p-5 border rounded-xl text-left transition-all mb-4 ${
+              formData.share_with_agency
+                ? "border-accent/50 bg-accent/10"
+                : "border-accent/20 bg-white/50"
+            }`}
+          >
+            <div className={`w-5 h-5 shrink-0 rounded border-2 flex items-center justify-center transition-all ${
+              formData.share_with_agency ? "bg-accent border-accent" : "border-foreground/30"
+            }`}>
+              {formData.share_with_agency && <svg viewBox="0 0 10 8" className="w-3 h-3 fill-white"><path d="M1 4l3 3 5-6"/></svg>}
+            </div>
+            <span className="text-sm font-medium text-foreground">Make this trip plan available to State Police / authorized public safety dashboard</span>
+          </button>
+
+          <div className="bg-accent/5 border border-accent/15 rounded-xl p-5 mb-5">
+            <p className="text-sm text-foreground/70 leading-relaxed">This does not create an emergency call. It stores the plan so responders can access it if you are reported missing or overdue.</p>
+          </div>
+
+          <p className="text-[10px] font-bold tracking-[0.2em] text-accent/40">DESTINATION: STATE POLICE / COUNTY SAR DASHBOARD</p>
         </>
       );
       default: return null;
