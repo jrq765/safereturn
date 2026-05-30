@@ -1,19 +1,21 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowLeft } from "lucide-react";
 import AgencyStep from "@/components/steps/AgencyStep";
 import { toast } from "sonner";
 import formatTripEmail from "@/utils/formatTripEmail";
+import moment from "moment";
 
 const STEPS = [
-  { id: "mission",   label: "MISSION",           number: "01" },
-  { id: "route",     label: "ROUTE",              number: "02" },
-  { id: "people",    label: "PEOPLE & CONTACTS",  number: "03" },
-  { id: "vehicle",   label: "VEHICLE",            number: "04" },
-  { id: "gear",      label: "GEAR",               number: "05" },
-  { id: "contacts",  label: "CONTACTS",           number: "06" },
-  { id: "agency",    label: "AGENCY",             number: "07" },
+  { id: "mission",      label: "MISSION",           number: "01" },
+  { id: "route",        label: "ROUTE",              number: "02" },
+  { id: "people",       label: "PEOPLE & CONTACTS",  number: "03" },
+  { id: "vehicle",      label: "VEHICLE",            number: "04" },
+  { id: "gear",         label: "GEAR",               number: "05" },
+  { id: "medical",      label: "MEDICAL",            number: "06" },
+  { id: "agency",       label: "AGENCY",             number: "07" },
+  { id: "confirmation", label: "CONFIRMATION",       number: "08" },
 ];
 
 const GEAR_ITEMS = [
@@ -23,49 +25,80 @@ const GEAR_ITEMS = [
   "Satellite communicator", "Life jacket", "Knife / multitool",
 ];
 
+const DEFAULT_GEAR = ["Water", "Food", "Phone"];
+
 const INITIAL_DATA = {
-  primary_name: "", primary_age: "", primary_phone: "", primary_blood_type: "",
-  emergency_device_type: "", total_participants: 1,
-  park_name: "", visitor_center: "", travel_method: "", accommodation: "",
-  arrival_datetime: "", departure_datetime: "", expected_return_datetime: "",
-  activities: [], backup_activity: "",
-  vehicle_make: "", vehicle_model: "", vehicle_color: "", vehicle_license: "",
-  vessel_make: "", vessel_model: "", vessel_color: "",
-  bicycle_make: "", bicycle_model: "", bicycle_color: "",
-  camping_tent: "", backpack_description: "", other_equipment: "",
-  gear_checklist: [],
+  travel_method: "",
+  park_name: "",
+  departure_datetime: "",
+  expected_return_datetime: "",
+  route_notes: "",
+  county_region: "",
+  last_planned_location: "",
+  primary_name: "",
+  primary_phone: "",
+  primary_age: "",
+  total_participants: 1,
+  gear_checklist: [...DEFAULT_GEAR],
+  other_equipment: "",
+  allergies: "",
+  medications: "",
+  medical_conditions: "",
+  primary_blood_type: "",
+  emergency_medical_notes: "",
   share_with_agency: true,
+  confirmed_return: false,
 };
 
 const BG = "https://images.unsplash.com/photo-1448375240586-882707db888b?w=1920&auto=format&fit=crop";
 
-function Field({ label, children }) {
+function Field({ label, children, className = "" }) {
   return (
-    <div className="mb-6">
-      <label className="block text-xs font-bold tracking-[0.15em] mb-2 uppercase text-foreground/60">{label}</label>
+    <div className={`mb-5 ${className}`}>
+      <label className="block text-xs font-bold tracking-[0.15em] mb-2 uppercase text-foreground/50">{label}</label>
       {children}
     </div>
   );
 }
 
-const inputCls = "w-full bg-white/70 text-sm px-4 py-3 focus:outline-none transition-colors font-inter" +
-  " border border-white/50 focus:border-accent/60 text-foreground placeholder:text-foreground/30 rounded-lg backdrop-blur-sm";
+const inputCls = "w-full bg-white/70 text-sm px-4 py-3 focus:outline-none transition-colors font-inter border border-white/50 focus:border-accent/60 text-foreground placeholder:text-foreground/30 rounded-lg backdrop-blur-sm";
+const textareaCls = `${inputCls} resize-none`;
 
 export default function TripFormAlt() {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [formData, setFormData] = useState(INITIAL_DATA);
-  const [contacts, setContacts] = useState([{ contact_name: "", contact_email: "", contact_phone: "", relationship: "family" }]);
+  const [extraPeople, setExtraPeople] = useState([]);
+  const [contacts, setContacts] = useState([{ contact_name: "", relationship: "family", contact_phone: "", contact_email: "" }]);
+  const [vehicles, setVehicles] = useState([{ vehicle_make: "", vehicle_model: "", vehicle_color: "", vehicle_license: "", vehicle_location: "" }]);
   const [submitting, setSubmitting] = useState(false);
 
   const upd = (field) => (e) => setFormData(p => ({ ...p, [field]: e.target.value }));
 
   const goTo = (i) => { setStep(i); window.scrollTo({ top: 0 }); };
 
+  const toggleGear = (item) => {
+    const list = formData.gear_checklist || [];
+    setFormData(p => ({
+      ...p,
+      gear_checklist: list.includes(item) ? list.filter(g => g !== item) : [...list, item],
+    }));
+  };
+
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
-      const tripPlan = await base44.entities.TripPlan.create({ ...formData, status: "active" });
+      const planData = {
+        ...formData,
+        status: "active",
+        other_contacts: extraPeople,
+        vehicle_make: vehicles[0]?.vehicle_make || "",
+        vehicle_model: vehicles[0]?.vehicle_model || "",
+        vehicle_color: vehicles[0]?.vehicle_color || "",
+        vehicle_license: vehicles[0]?.vehicle_license || "",
+        authority_contacts: [],
+      };
+      const tripPlan = await base44.entities.TripPlan.create(planData);
       const portalUrl = `${window.location.origin}/family?id=${tripPlan.id}`;
       const emailBody = formatTripEmail(formData, portalUrl);
       const subject = `Trip Plan Filed: ${formData.primary_name || "Traveler"} — ${formData.park_name || "Outdoor Trip"}`;
@@ -84,6 +117,8 @@ export default function TripFormAlt() {
     }
   };
 
+  const fmtDt = (v) => v ? moment(v).format("MMM D, YYYY [at] h:mm A") : "—";
+
   const renderStep = () => {
     switch (step) {
       case 0: return (
@@ -91,7 +126,7 @@ export default function TripFormAlt() {
           <Field label="Activity Type">
             <select className={inputCls} value={formData.travel_method} onChange={upd("travel_method")}>
               <option value="">Select activity...</option>
-              {["Hiking","Backpacking","Fishing","Hunting","Climbing","Kayaking","Mountain Biking","Skiing","Off-Road","Camping","Other"].map(a => <option key={a}>{a}</option>)}
+              {["Hiking","Boating","Rafting","Fishing","Hunting","Camping","Climbing","Skiing","Other"].map(a => <option key={a}>{a}</option>)}
             </select>
           </Field>
           <Field label="Primary Destination">
@@ -107,138 +142,224 @@ export default function TripFormAlt() {
           </div>
         </>
       );
+
       case 1: return (
         <>
-          <Field label="Visitor Center / Trailhead">
-            <input className={inputCls} placeholder="Nearest visitor center or trailhead" value={formData.visitor_center} onChange={upd("visitor_center")} />
+          <Field label="Route Notes">
+            <textarea className={`${textareaCls} h-32`} placeholder="Trail access, turnaround points, alternate routes" value={formData.route_notes} onChange={upd("route_notes")} />
           </Field>
-          <Field label="Accommodation">
-            <input className={inputCls} placeholder="Camp name, cabin, hotel, etc." value={formData.accommodation} onChange={upd("accommodation")} />
+          <Field label="County / Region">
+            <input className={inputCls} placeholder="e.g. Lane County, OR" value={formData.county_region} onChange={upd("county_region")} />
           </Field>
-          <Field label="Backup / Alternate Activity">
-            <input className={inputCls} placeholder="What will you do if the primary plan changes?" value={formData.backup_activity} onChange={upd("backup_activity")} />
+          <Field label="Last Planned Location / Map Notes">
+            <input className={inputCls} placeholder="Optional — trailhead, coordinates, landmark" value={formData.last_planned_location} onChange={upd("last_planned_location")} />
           </Field>
         </>
       );
+
       case 2: return (
         <>
-          <Field label="Lead Person Name">
-            <input className={inputCls} placeholder="Full name" value={formData.primary_name} onChange={upd("primary_name")} />
-          </Field>
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Age">
-              <input className={inputCls} placeholder="Age" value={formData.primary_age} onChange={upd("primary_age")} />
-            </Field>
-            <Field label="Phone Number">
-              <input className={inputCls} placeholder="+1 555 000 0000" value={formData.primary_phone} onChange={upd("primary_phone")} />
-            </Field>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Blood Type">
-              <input className={inputCls} placeholder="e.g. O+" value={formData.primary_blood_type} onChange={upd("primary_blood_type")} />
-            </Field>
-            <Field label="Total Participants">
-              <input type="number" className={inputCls} min={1} value={formData.total_participants} onChange={upd("total_participants")} />
-            </Field>
-          </div>
-          <Field label="Emergency Device">
-            <input className={inputCls} placeholder="Satellite communicator, PLB, etc." value={formData.emergency_device_type} onChange={upd("emergency_device_type")} />
-          </Field>
-        </>
-      );
-      case 3: return (
-        <>
-          <Field label="Vehicle Make & Model">
-            <div className="grid grid-cols-2 gap-4">
-              <input className={inputCls} placeholder="Make" value={formData.vehicle_make} onChange={upd("vehicle_make")} />
-              <input className={inputCls} placeholder="Model" value={formData.vehicle_model} onChange={upd("vehicle_model")} />
-            </div>
-          </Field>
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Color">
-              <input className={inputCls} placeholder="e.g. Silver" value={formData.vehicle_color} onChange={upd("vehicle_color")} />
-            </Field>
-            <Field label="License Plate">
-              <input className={inputCls} placeholder="Plate number" value={formData.vehicle_license} onChange={upd("vehicle_license")} />
-            </Field>
-          </div>
-          <Field label="Vessel (if applicable)">
+          <div className="mb-6">
+            <p className="text-xs font-bold tracking-[0.15em] uppercase text-foreground/50 mb-3">MAIN TRAVELER</p>
             <div className="grid grid-cols-3 gap-3">
-              <input className={inputCls} placeholder="Make" value={formData.vessel_make} onChange={upd("vessel_make")} />
-              <input className={inputCls} placeholder="Model" value={formData.vessel_model} onChange={upd("vessel_model")} />
-              <input className={inputCls} placeholder="Color" value={formData.vessel_color} onChange={upd("vessel_color")} />
+              <Field label="Name" className="mb-0">
+                <input className={inputCls} placeholder="Full name" value={formData.primary_name} onChange={upd("primary_name")} />
+              </Field>
+              <Field label="Phone" className="mb-0">
+                <input className={inputCls} placeholder="+1 555 000 0000" value={formData.primary_phone} onChange={upd("primary_phone")} />
+              </Field>
+              <Field label="Age" className="mb-0">
+                <input className={inputCls} placeholder="Age" value={formData.primary_age} onChange={upd("primary_age")} />
+              </Field>
             </div>
-          </Field>
-        </>
-      );
-      case 4: {
-        const toggleGear = (item) => {
-          const list = formData.gear_checklist || [];
-          setFormData(p => ({
-            ...p,
-            gear_checklist: list.includes(item) ? list.filter(g => g !== item) : [...list, item],
-          }));
-        };
-        return (
-          <>
-            <div className="grid grid-cols-3 gap-2 mb-6">
-              {GEAR_ITEMS.map(item => {
-                const checked = (formData.gear_checklist || []).includes(item);
-                return (
-                  <button
-                    key={item}
-                    type="button"
-                    onClick={() => toggleGear(item)}
-                    className={`flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-left transition-all ${
-                      checked
-                        ? "border-accent bg-accent/10 text-accent"
-                        : "border-accent/20 bg-white/50 text-foreground/70 hover:border-accent/40"
-                    }`}
-                  >
-                    <div className={`w-4 h-4 shrink-0 rounded border flex items-center justify-center transition-all ${
-                      checked ? "bg-accent border-accent" : "border-foreground/30"
-                    }`}>
-                      {checked && <svg viewBox="0 0 10 8" className="w-2.5 h-2.5 fill-white"><path d="M1 4l3 3 5-6"/></svg>}
-                    </div>
-                    {item}
-                  </button>
-                );
-              })}
-            </div>
-            <Field label="Other Notable Equipment">
-              <textarea className={`${inputCls} h-20 resize-none`} placeholder="Any other gear that may aid identification or rescue" value={formData.other_equipment} onChange={upd("other_equipment")} />
-            </Field>
-          </>
-        );
-      }
-      case 5: return (
-        <>
-          <p className="text-xs text-foreground/50 mb-5 tracking-wide">These contacts will receive your trip plan and the family monitoring portal link via email.</p>
-          {contacts.map((c, i) => (
-            <div key={i} className="border border-accent/20 bg-white/50 backdrop-blur-sm rounded-xl p-4 mb-4">
+          </div>
+
+          {extraPeople.length > 0 && extraPeople.map((p, i) => (
+            <div key={i} className="border border-accent/20 bg-white/40 rounded-xl p-4 mb-3">
               <div className="flex justify-between items-center mb-3">
-                <span className="text-xs font-bold tracking-widest text-accent/40">CONTACT {String(i + 1).padStart(2, "0")}</span>
-                {contacts.length > 1 && <button onClick={() => setContacts(cs => cs.filter((_, j) => j !== i))} className="text-xs text-red-500 hover:text-red-700">REMOVE</button>}
+                <span className="text-xs font-bold tracking-widest text-accent/40">PERSON {i + 2}</span>
+                <button onClick={() => setExtraPeople(ps => ps.filter((_, j) => j !== i))} className="text-xs text-red-500">REMOVE</button>
               </div>
-              <div className="grid grid-cols-2 gap-3 mb-3">
-                <input className={inputCls} placeholder="Full name" value={c.contact_name} onChange={e => setContacts(cs => cs.map((x, j) => j === i ? { ...x, contact_name: e.target.value } : x))} />
-                <input className={inputCls} placeholder="Email address" value={c.contact_email} onChange={e => setContacts(cs => cs.map((x, j) => j === i ? { ...x, contact_email: e.target.value } : x))} />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <input className={inputCls} placeholder="Phone number" value={c.contact_phone} onChange={e => setContacts(cs => cs.map((x, j) => j === i ? { ...x, contact_phone: e.target.value } : x))} />
-                <select className={inputCls} value={c.relationship} onChange={e => setContacts(cs => cs.map((x, j) => j === i ? { ...x, relationship: e.target.value } : x))}>
-                  <option value="family">Family</option>
-                  <option value="friend">Friend</option>
-                  <option value="colleague">Colleague</option>
-                  <option value="other">Other</option>
-                </select>
+              <div className="grid grid-cols-3 gap-3">
+                <input className={inputCls} placeholder="Full name" value={p.name} onChange={e => setExtraPeople(ps => ps.map((x, j) => j === i ? { ...x, name: e.target.value } : x))} />
+                <input className={inputCls} placeholder="Phone" value={p.phone} onChange={e => setExtraPeople(ps => ps.map((x, j) => j === i ? { ...x, phone: e.target.value } : x))} />
+                <input className={inputCls} placeholder="Age" value={p.age} onChange={e => setExtraPeople(ps => ps.map((x, j) => j === i ? { ...x, age: e.target.value } : x))} />
               </div>
             </div>
           ))}
-          <button onClick={() => setContacts(cs => [...cs, { contact_name: "", contact_email: "", contact_phone: "", relationship: "family" }])} className="text-xs font-bold tracking-widest text-accent/50 hover:text-accent border border-dashed border-accent/30 rounded-lg w-full py-3 transition-colors">+ ADD CONTACT</button>
+          <button onClick={() => setExtraPeople(ps => [...ps, { name: "", phone: "", age: "" }])} className="text-xs font-bold tracking-widest text-accent/50 hover:text-accent transition-colors mb-6">+ Add Person</button>
+
+          <div className="border-t border-accent/20 pt-5">
+            <p className="text-xs font-bold tracking-[0.15em] uppercase text-foreground/50 mb-3">EMERGENCY CONTACTS</p>
+            {contacts.map((c, i) => (
+              <div key={i} className="border border-accent/20 bg-white/40 rounded-xl p-4 mb-3">
+                <div className="flex justify-between items-center mb-3">
+                  <span className="text-xs font-bold tracking-widest text-accent/40">CONTACT {String(i + 1).padStart(2, "0")}</span>
+                  {contacts.length > 1 && <button onClick={() => setContacts(cs => cs.filter((_, j) => j !== i))} className="text-xs text-red-500">REMOVE</button>}
+                </div>
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <input className={inputCls} placeholder="Full name" value={c.contact_name} onChange={e => setContacts(cs => cs.map((x, j) => j === i ? { ...x, contact_name: e.target.value } : x))} />
+                  <select className={inputCls} value={c.relationship} onChange={e => setContacts(cs => cs.map((x, j) => j === i ? { ...x, relationship: e.target.value } : x))}>
+                    <option value="family">Family</option>
+                    <option value="friend">Friend</option>
+                    <option value="colleague">Colleague</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <input className={inputCls} placeholder="Phone number" value={c.contact_phone} onChange={e => setContacts(cs => cs.map((x, j) => j === i ? { ...x, contact_phone: e.target.value } : x))} />
+                  <input className={inputCls} placeholder="Email address" value={c.contact_email} onChange={e => setContacts(cs => cs.map((x, j) => j === i ? { ...x, contact_email: e.target.value } : x))} />
+                </div>
+              </div>
+            ))}
+            <button onClick={() => setContacts(cs => [...cs, { contact_name: "", relationship: "family", contact_phone: "", contact_email: "" }])} className="text-xs font-bold tracking-widest text-accent/50 hover:text-accent transition-colors">+ Add Contact</button>
+          </div>
         </>
       );
+
+      case 3: return (
+        <>
+          {vehicles.map((v, i) => (
+            <div key={i} className="border border-accent/20 bg-white/40 rounded-xl p-4 mb-4">
+              <div className="flex justify-between items-center mb-3">
+                <span className="text-xs font-bold tracking-widest text-accent/40">VEHICLE {i + 1}</span>
+                {vehicles.length > 1 && <button onClick={() => setVehicles(vs => vs.filter((_, j) => j !== i))} className="text-xs text-red-500">REMOVE</button>}
+              </div>
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <input className={inputCls} placeholder="Make" value={v.vehicle_make} onChange={e => setVehicles(vs => vs.map((x, j) => j === i ? { ...x, vehicle_make: e.target.value } : x))} />
+                <input className={inputCls} placeholder="Model" value={v.vehicle_model} onChange={e => setVehicles(vs => vs.map((x, j) => j === i ? { ...x, vehicle_model: e.target.value } : x))} />
+              </div>
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <input className={inputCls} placeholder="Color" value={v.vehicle_color} onChange={e => setVehicles(vs => vs.map((x, j) => j === i ? { ...x, vehicle_color: e.target.value } : x))} />
+                <input className={inputCls} placeholder="License Plate" value={v.vehicle_license} onChange={e => setVehicles(vs => vs.map((x, j) => j === i ? { ...x, vehicle_license: e.target.value } : x))} />
+              </div>
+              <input className={`${inputCls} mb-3`} placeholder="Parking / Trailhead Location" value={v.vehicle_location} onChange={e => setVehicles(vs => vs.map((x, j) => j === i ? { ...x, vehicle_location: e.target.value } : x))} />
+              <div className="border-2 border-dashed border-accent/20 rounded-lg flex items-center justify-center h-20 text-xs text-foreground/30 font-medium tracking-widest cursor-pointer hover:border-accent/40 transition-colors">
+                + VEHICLE PHOTO (optional)
+              </div>
+            </div>
+          ))}
+          <button onClick={() => setVehicles(vs => [...vs, { vehicle_make: "", vehicle_model: "", vehicle_color: "", vehicle_license: "", vehicle_location: "" }])} className="text-xs font-bold tracking-widest text-accent/50 hover:text-accent transition-colors">+ Add Vehicle</button>
+        </>
+      );
+
+      case 4: return (
+        <>
+          <div className="grid grid-cols-3 gap-2 mb-5">
+            {GEAR_ITEMS.map(item => {
+              const checked = (formData.gear_checklist || []).includes(item);
+              return (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() => toggleGear(item)}
+                  className={`flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-left transition-all ${
+                    checked
+                      ? "border-accent bg-accent/10 text-accent"
+                      : "border-accent/20 bg-white/50 text-foreground/70 hover:border-accent/40"
+                  }`}
+                >
+                  <div className={`w-4 h-4 shrink-0 rounded border flex items-center justify-center transition-all ${
+                    checked ? "bg-accent border-accent" : "border-foreground/30"
+                  }`}>
+                    {checked && <svg viewBox="0 0 10 8" className="w-2.5 h-2.5 fill-white"><path d="M1 4l3 3 5-6"/></svg>}
+                  </div>
+                  {item}
+                </button>
+              );
+            })}
+          </div>
+          <Field label="Other Gear Notes">
+            <textarea className={`${textareaCls} h-20`} placeholder="Any other gear that may aid identification or rescue" value={formData.other_equipment} onChange={upd("other_equipment")} />
+          </Field>
+        </>
+      );
+
+      case 5: return (
+        <>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Allergies">
+              <input className={inputCls} placeholder="e.g. Penicillin, bee stings" value={formData.allergies} onChange={upd("allergies")} />
+            </Field>
+            <Field label="Medications">
+              <input className={inputCls} placeholder="Current medications" value={formData.medications} onChange={upd("medications")} />
+            </Field>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Medical Conditions">
+              <input className={inputCls} placeholder="Relevant conditions" value={formData.medical_conditions} onChange={upd("medical_conditions")} />
+            </Field>
+            <Field label="Blood Type (Optional)">
+              <input className={inputCls} placeholder="e.g. O+" value={formData.primary_blood_type} onChange={upd("primary_blood_type")} />
+            </Field>
+          </div>
+          <Field label="Emergency Medical Notes">
+            <textarea className={`${textareaCls} h-24`} placeholder="Anything else responders should know" value={formData.emergency_medical_notes} onChange={upd("emergency_medical_notes")} />
+          </Field>
+        </>
+      );
+
       case 6: return <AgencyStep formData={formData} setFormData={setFormData} />;
+
+      case 7: {
+        const v = vehicles[0] || {};
+        const gearList = (formData.gear_checklist || []).join(", ") || "—";
+        const medSummary = [formData.allergies, formData.medications, formData.medical_conditions].filter(Boolean).join("; ") || "—";
+        const returnStr = formData.expected_return_datetime
+          ? moment(formData.expected_return_datetime).format("h:mm A [on] MMMM D, YYYY")
+          : "[return time not set]";
+
+        const summaryRows = [
+          ["Activity Type", formData.travel_method || "—"],
+          ["Primary Destination", formData.park_name || "—"],
+          ["Departure", fmtDt(formData.departure_datetime)],
+          ["Expected Return", fmtDt(formData.expected_return_datetime)],
+          ["County / Region", formData.county_region || "—"],
+          ["Last Planned Location", formData.last_planned_location || "—"],
+          ["Main Traveler", [formData.primary_name, formData.primary_age && `Age ${formData.primary_age}`, formData.primary_phone].filter(Boolean).join(" · ") || "—"],
+          ["Emergency Contacts", contacts.filter(c => c.contact_name).map(c => `${c.contact_name} (${c.relationship})`).join(", ") || "—"],
+          ["Vehicle", [v.vehicle_make, v.vehicle_model, v.vehicle_color, v.vehicle_license].filter(Boolean).join(" ") || "—"],
+          ["Gear", gearList],
+          ["Medical", medSummary],
+          ["Agency Sharing", formData.share_with_agency ? "Yes — shared with public safety dashboard" : "No"],
+        ];
+
+        return (
+          <>
+            <div className="border border-accent/20 rounded-xl overflow-hidden mb-6">
+              {summaryRows.map(([label, value], i) => (
+                <div key={label} className={`flex gap-4 px-5 py-3 text-sm ${i % 2 === 0 ? "bg-white/40" : "bg-white/20"}`}>
+                  <span className="text-xs font-bold tracking-[0.12em] uppercase text-foreground/40 w-40 shrink-0 pt-0.5">{label}</span>
+                  <span className="text-foreground/80 break-words">{value}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="bg-accent/5 border border-accent/20 rounded-xl p-5 mb-5">
+              <p className="text-sm text-foreground/80 leading-relaxed font-medium">
+                I confirm I am planning to return back to my vehicle at approximately{" "}
+                <span className="text-accent font-bold">{returnStr}</span>.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setFormData(p => ({ ...p, confirmed_return: !p.confirmed_return }))}
+              className={`flex items-start gap-3 w-full text-left transition-all mb-1 p-1 rounded-lg`}
+            >
+              <div className={`w-5 h-5 mt-0.5 shrink-0 rounded border-2 flex items-center justify-center transition-all ${
+                formData.confirmed_return ? "bg-accent border-accent" : "border-foreground/30"
+              }`}>
+                {formData.confirmed_return && <svg viewBox="0 0 10 8" className="w-3 h-3 fill-white"><path d="M1 4l3 3 5-6"/></svg>}
+              </div>
+              <span className="text-sm text-foreground/70 leading-relaxed">
+                I understand that if I do not return around this time, my emergency contacts should use this plan to help responders.
+              </span>
+            </button>
+          </>
+        );
+      }
+
       default: return null;
     }
   };
@@ -253,18 +374,17 @@ export default function TripFormAlt() {
 
       {/* Sidebar */}
       <div className="relative z-10 w-72 shrink-0 flex flex-col border-r border-white/15 bg-black/40 backdrop-blur-xl">
-        {/* Big logo */}
+        {/* Logo */}
         <div className="px-6 pt-8 pb-6 border-b border-white/15 flex flex-col items-center text-center">
           <img
             src="https://media.base44.com/images/public/6a1b2bf2fc37b8175a269ec2/b59cfd204_ChatGPTImageMay30202601_47_28PM.png"
             alt="SafeReturn"
             className="h-28 w-auto object-contain"
           />
-          <span className="mt-2 text-white/70 text-sm font-semibold tracking-widest uppercase">SafeReturn</span>
         </div>
 
         {/* Steps nav */}
-        <div className="px-6 pt-6">
+        <div className="px-6 pt-6 flex-1">
           <p className="text-[10px] font-bold tracking-[0.2em] mb-4 text-white/40">FILING PROGRESS</p>
           <nav className="flex flex-col gap-1">
             {STEPS.map((s, i) => (
@@ -283,6 +403,16 @@ export default function TripFormAlt() {
             ))}
           </nav>
         </div>
+
+        {/* Back to home */}
+        <div className="px-6 pb-6">
+          <button
+            onClick={() => navigate("/")}
+            className="flex items-center gap-2 text-xs text-white/40 hover:text-white/70 transition-colors"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" /> Back to Home
+          </button>
+        </div>
       </div>
 
       {/* Main content */}
@@ -295,22 +425,30 @@ export default function TripFormAlt() {
             {renderStep()}
           </div>
 
-          {/* Continue button */}
-          <div className="border-t border-accent/15">
+          {/* Navigation */}
+          <div className="border-t border-accent/15 flex">
+            {step > 0 && (
+              <button
+                onClick={() => goTo(step - 1)}
+                className="px-8 py-5 text-xs font-black tracking-[0.25em] text-foreground/40 hover:text-foreground/70 border-r border-accent/15 transition-colors"
+              >
+                BACK
+              </button>
+            )}
             {step < STEPS.length - 1 ? (
               <button
                 onClick={() => goTo(step + 1)}
-                className="w-full py-5 text-xs font-black tracking-[0.25em] text-white bg-accent hover:bg-accent/90 transition-colors"
+                className="flex-1 py-5 text-xs font-black tracking-[0.25em] text-white bg-accent hover:bg-accent/90 transition-colors"
               >
                 CONTINUE
               </button>
             ) : (
               <button
                 onClick={handleSubmit}
-                disabled={submitting}
-                className="w-full py-5 text-xs font-black tracking-[0.25em] text-white bg-accent hover:bg-accent/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-3"
+                disabled={submitting || !formData.confirmed_return}
+                className="flex-1 py-5 text-xs font-black tracking-[0.25em] text-white bg-accent hover:bg-accent/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-3"
               >
-                {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> FILING PLAN...</> : "FILE TRIP PLAN"}
+                {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> FILING PLAN...</> : "CONFIRM & SAVE PLAN"}
               </button>
             )}
           </div>
