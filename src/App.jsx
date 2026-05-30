@@ -14,6 +14,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Home from './pages/Home';
 import TripForm from './pages/TripForm';
+import TripFormAlt from './pages/TripFormAlt';
 import Dashboard from './pages/Dashboard';
 import Confirmation from './pages/Confirmation';
 import Profile from './pages/Profile';
@@ -51,6 +52,7 @@ const AuthenticatedApp = () => {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/new-plan" element={<TripForm />} />
+      <Route path="/new-plan-alt" element={<TripFormAlt />} />
       <Route element={<Layout />}>
         <Route path="/" element={<Home />} />
       </Route>
