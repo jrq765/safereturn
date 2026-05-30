@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Send, Loader2, ChevronUp } from "lucide-react";
+import PostSubmitAuthPrompt from "@/components/PostSubmitAuthPrompt";
 import StepWho from "@/components/steps/StepWho";
 import StepWhere from "@/components/steps/StepWhere";
 import StepWhen from "@/components/steps/StepWhen";
@@ -68,6 +69,7 @@ export default function TripForm() {
   const [contacts, setContacts] = useState([{ contact_name: "", contact_email: "", contact_phone: "", relationship: "family" }]);
   const [selectedAuthorities, setSelectedAuthorities] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const [authPrompt, setAuthPrompt] = useState(null); // { tripId, primaryData }
   const [editId, setEditId] = useState(null);
   const [loadingEdit, setLoadingEdit] = useState(false);
 
@@ -161,7 +163,16 @@ export default function TripForm() {
         error: results[i].status === "rejected" ? (results[i].reason?.message || "Unknown error") : null,
       }));
       sessionStorage.setItem(`email_results_${tripPlan.id}`, JSON.stringify(emailResults));
-      navigate("/confirmation?id=" + tripPlan.id);
+
+      // Check if user is authenticated — if not, show account creation prompt
+      let isAuthed = false;
+      try { await base44.auth.me(); isAuthed = true; } catch (_) {}
+
+      if (!isAuthed) {
+        setAuthPrompt({ tripId: tripPlan.id, primaryData: formData });
+      } else {
+        navigate("/confirmation?id=" + tripPlan.id);
+      }
     } catch (err) {
       toast.error("Something went wrong: " + err.message);
     } finally {
@@ -177,6 +188,22 @@ export default function TripForm() {
     <StepEquipment key="equip" data={formData} onChange={setFormData} />,
     <StepContacts key="contacts" contacts={contacts} onContactsChange={setContacts} parkName={formData.park_name} selectedAuthorities={selectedAuthorities} onAuthoritiesChange={setSelectedAuthorities} />,
   ];
+
+  if (authPrompt) {
+    return (
+      <div className="relative min-h-screen">
+        <div className="fixed inset-0 z-0">
+          <img src={STEP_VIDEOS[step]?.poster} alt="" className="absolute inset-0 w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-black/50" />
+        </div>
+        <PostSubmitAuthPrompt
+          tripId={authPrompt.tripId}
+          primaryData={authPrompt.primaryData}
+          onSkip={() => navigate("/confirmation?id=" + authPrompt.tripId)}
+        />
+      </div>
+    );
+  }
 
   if (loadingEdit) {
     return (

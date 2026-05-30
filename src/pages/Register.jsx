@@ -45,7 +45,22 @@ export default function Register() {
       if (result?.access_token) {
         base44.auth.setToken(result.access_token);
       }
-      window.location.href = "/";
+      // Save prefilled trip data to profile if coming from a trip submission
+      const p = new URLSearchParams(window.location.search);
+      const prefillName = p.get("prefill_name");
+      const prefillPhone = p.get("prefill_phone");
+      const prefillAge = p.get("prefill_age");
+      const prefillBlood = p.get("prefill_blood");
+      const tripId = p.get("trip_id");
+      if (prefillName || prefillPhone) {
+        await base44.auth.updateMe({
+          saved_primary_name: prefillName || undefined,
+          saved_primary_phone: prefillPhone || undefined,
+          saved_primary_age: prefillAge || undefined,
+          saved_primary_blood_type: prefillBlood || undefined,
+        });
+      }
+      window.location.href = tripId ? `/confirmation?id=${tripId}` : "/";
     } catch (err) {
       setError(err.message || "Invalid verification code");
     } finally {
