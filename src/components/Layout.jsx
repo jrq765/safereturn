@@ -21,7 +21,7 @@ export default function Layout() {
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
             <img
-              src="https://media.base44.com/images/public/6a1b2bf2fc37b8175a269ec2/fccadc4a3_generated_image.png"
+              src="https://media.base44.com/images/public/6a1b2bf2fc37b8175a269ec2/b59cfd204_ChatGPTImageMay30202601_47_28PM.png"
               alt="SafeReturn"
               className="h-14 w-auto object-contain"
             />
