@@ -11,6 +11,7 @@ import StepWhat from "@/components/steps/StepWhat";
 import StepEquipment from "@/components/steps/StepEquipment";
 import StepContacts from "@/components/steps/StepContacts";
 import { toast } from "sonner";
+import formatTripEmail from "@/utils/formatTripEmail";
 
 const INITIAL_DATA = {
   primary_name: "", primary_age: "", primary_phone: "", emergency_device_type: "",
@@ -46,6 +47,9 @@ export default function TripForm() {
       authority_contacts: selectedAuthorities,
     });
 
+    const emailBody = formatTripEmail(formData);
+    const subject = `Trip Plan Filed: ${formData.primary_name} — ${formData.park_name || "Outdoor Trip"}`;
+
     const validContacts = contacts.filter(c => c.contact_name && c.contact_email);
     for (const contact of validContacts) {
       await base44.entities.EmergencyContact.create({
@@ -54,11 +58,26 @@ export default function TripForm() {
         contact_email: contact.contact_email,
         contact_phone: contact.contact_phone,
         relationship: contact.relationship,
-        notification_sent: false,
+        notification_sent: true,
+      });
+      await base44.integrations.Core.SendEmail({
+        to: contact.contact_email,
+        subject,
+        body: emailBody,
       });
     }
 
-    toast.success("Trip plan saved! Now send notifications to your contacts.");
+    for (const authority of selectedAuthorities) {
+      if (authority.email) {
+        await base44.integrations.Core.SendEmail({
+          to: authority.email,
+          subject: `[SAR Trip Plan] ${formData.primary_name} — ${formData.park_name || "Outdoor Trip"}`,
+          body: emailBody,
+        });
+      }
+    }
+
+    toast.success(`Trip plan filed! Emails sent to ${validContacts.length + selectedAuthorities.filter(a => a.email).length} contact(s).`);
     navigate("/confirmation?id=" + tripPlan.id);
     setSubmitting(false);
   };
