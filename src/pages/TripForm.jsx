@@ -1,9 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, Send, Loader2 } from "lucide-react";
-import FormProgress from "@/components/FormProgress";
+import { Send, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import StepWho from "@/components/steps/StepWho";
 import StepWhere from "@/components/steps/StepWhere";
 import StepWhen from "@/components/steps/StepWhen";
@@ -12,6 +10,18 @@ import StepEquipment from "@/components/steps/StepEquipment";
 import StepContacts from "@/components/steps/StepContacts";
 import { toast } from "sonner";
 import formatTripEmail from "@/utils/formatTripEmail";
+import { motion, AnimatePresence } from "framer-motion";
+
+const NATURE_VIDEO = "https://assets.mixkit.co/videos/preview/mixkit-aerial-view-of-a-river-running-through-a-forest-41892-large.mp4";
+
+const STEPS = [
+  { id: "who",       label: "Who",       number: "01" },
+  { id: "where",     label: "Where",     number: "02" },
+  { id: "when",      label: "When",      number: "03" },
+  { id: "what",      label: "What",      number: "04" },
+  { id: "equipment", label: "Equipment", number: "05" },
+  { id: "contacts",  label: "Contacts",  number: "06" },
+];
 
 const INITIAL_DATA = {
   primary_name: "", primary_age: "", primary_phone: "", emergency_device_type: "",
@@ -34,9 +44,10 @@ export default function TripForm() {
   const [submitting, setSubmitting] = useState(false);
   const [editId, setEditId] = useState(null);
   const [loadingEdit, setLoadingEdit] = useState(false);
+  const sectionRefs = useRef([]);
+  const containerRef = useRef(null);
 
   useEffect(() => {
-    // Auto-fill saved profile data for new plans
     base44.auth.me().then(u => {
       if (u.saved_primary_name || u.saved_primary_phone) {
         setFormData(prev => ({
@@ -68,7 +79,23 @@ export default function TripForm() {
     }
   }, []);
 
-  const canProceed = () => true;
+  const scrollToStep = (index) => {
+    sectionRefs.current[index]?.scrollIntoView({ behavior: "smooth" });
+    setStep(index);
+  };
+
+  useEffect(() => {
+    const observers = sectionRefs.current.map((ref, i) => {
+      if (!ref) return null;
+      const obs = new IntersectionObserver(
+        ([entry]) => { if (entry.isIntersecting) setStep(i); },
+        { threshold: 0.5 }
+      );
+      obs.observe(ref);
+      return obs;
+    });
+    return () => observers.forEach(o => o && o.disconnect());
+  }, [loadingEdit]);
 
   const handleSubmit = async () => {
     setSubmitting(true);
@@ -84,10 +111,8 @@ export default function TripForm() {
       const user = await base44.auth.me();
       const emailBody = formatTripEmail(formData);
       const subject = `Trip Plan Filed: ${formData.primary_name || "Traveler"} — ${formData.park_name || "Outdoor Trip"}`;
-
       const validContacts = contacts.filter(c => c.contact_name && c.contact_email);
 
-      // Save contacts to DB (non-blocking)
       if (!editId) {
         await Promise.allSettled(validContacts.map(contact =>
           base44.entities.EmergencyContact.create({
@@ -101,46 +126,28 @@ export default function TripForm() {
         ));
       }
 
-      // Build labeled email tasks with metadata for confirmation page
       const emailTasks = [
         ...validContacts.map(contact => ({
-          name: contact.contact_name,
-          to: contact.contact_email,
-          type: "contact",
+          name: contact.contact_name, to: contact.contact_email, type: "contact",
           promise: base44.functions.invoke('sendEmail', { to: contact.contact_email, subject, body: emailBody }),
         })),
         ...selectedAuthorities.filter(a => a.email).map(authority => ({
-          name: authority.name,
-          to: authority.email,
-          type: "authority",
-          promise: base44.functions.invoke('sendEmail', {
-            to: authority.email,
-            subject: `[SAR Trip Plan] ${formData.primary_name || "Traveler"} — ${formData.park_name || "Outdoor Trip"}`,
-            body: emailBody,
-          }),
+          name: authority.name, to: authority.email, type: "authority",
+          promise: base44.functions.invoke('sendEmail', { to: authority.email, subject: `[SAR Trip Plan] ${formData.primary_name || "Traveler"} — ${formData.park_name || "Outdoor Trip"}`, body: emailBody }),
         })),
         ...(user?.email ? [{
-          name: "You (confirmation copy)",
-          to: user.email,
-          type: "self",
-          promise: base44.functions.invoke('sendEmail', {
-            to: user.email,
-            subject: `[Your Copy] ${subject}`,
-            body: emailBody + `<br/><br/><hr/><p style="color:#888;font-size:12px">This is your confirmation copy of the trip plan notification sent to your emergency contacts and authorities.</p>`,
-          }),
+          name: "You (confirmation copy)", to: user.email, type: "self",
+          promise: base44.functions.invoke('sendEmail', { to: user.email, subject: `[Your Copy] ${subject}`, body: emailBody + `<br/><br/><hr/><p style="color:#888;font-size:12px">This is your confirmation copy.</p>` }),
         }] : []),
       ];
 
       const results = await Promise.allSettled(emailTasks.map(t => t.promise));
       const emailResults = emailTasks.map((task, i) => ({
-        name: task.name,
-        to: task.to,
-        type: task.type,
+        name: task.name, to: task.to, type: task.type,
         success: results[i].status === "fulfilled",
         error: results[i].status === "rejected" ? (results[i].reason?.message || "Unknown error") : null,
       }));
       sessionStorage.setItem(`email_results_${tripPlan.id}`, JSON.stringify(emailResults));
-
       navigate("/confirmation?id=" + tripPlan.id);
     } catch (err) {
       toast.error("Something went wrong: " + err.message);
@@ -149,43 +156,159 @@ export default function TripForm() {
     }
   };
 
-  const stepComponents = [
+  const stepContent = [
     <StepWho key="who" data={formData} onChange={setFormData} />,
     <StepWhere key="where" data={formData} onChange={setFormData} />,
     <StepWhen key="when" data={formData} onChange={setFormData} />,
     <StepWhat key="what" data={formData} onChange={setFormData} />,
     <StepEquipment key="equip" data={formData} onChange={setFormData} />,
-    <StepContacts
-      key="contacts"
-      contacts={contacts}
-      onContactsChange={setContacts}
-      parkName={formData.park_name}
-      selectedAuthorities={selectedAuthorities}
-      onAuthoritiesChange={setSelectedAuthorities}
-    />,
+    <StepContacts key="contacts" contacts={contacts} onContactsChange={setContacts} parkName={formData.park_name} selectedAuthorities={selectedAuthorities} onAuthoritiesChange={setSelectedAuthorities} />,
   ];
 
-  return (
-    <div className="max-w-3xl mx-auto px-4 py-8 font-inter">
-      {loadingEdit && <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>}
-      {!loadingEdit && <FormProgress currentStep={step} />}
-      <div className="min-h-[400px]">
-        {!loadingEdit && stepComponents[step]}
+  if (loadingEdit) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-background">
+        <Loader2 className="w-10 h-10 animate-spin text-primary" />
       </div>
-      <div className="flex items-center justify-between mt-8 pt-6 border-t border-border">
-        <Button variant="outline" onClick={() => setStep(s => s - 1)} disabled={step === 0} className="gap-2">
-          <ArrowLeft className="w-4 h-4" /> Back
-        </Button>
-        {step < 5 ? (
-          <Button onClick={() => setStep(s => s + 1)} disabled={!canProceed()} className="gap-2 bg-primary hover:bg-primary/90 text-white">
-            Next <ArrowRight className="w-4 h-4" />
-          </Button>
-        ) : (
-          <Button onClick={handleSubmit} disabled={!canProceed() || submitting} className="gap-2 bg-accent hover:bg-accent/90 text-accent-foreground">
-            {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-            {submitting ? "Saving..." : "Save Plan & Notify Contacts"}
-          </Button>
-        )}
+    );
+  }
+
+  return (
+    <div ref={containerRef} className="relative font-inter">
+      {/* Fixed nature video background */}
+      <div className="fixed inset-0 z-0 overflow-hidden">
+        <video
+          autoPlay muted loop playsInline
+          className="w-full h-full object-cover"
+          style={{ opacity: 0.18 }}
+        >
+          <source src={NATURE_VIDEO} type="video/mp4" />
+        </video>
+        <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background/80" />
+      </div>
+
+      {/* Side step dots */}
+      <div className="fixed right-6 top-1/2 -translate-y-1/2 z-50 flex flex-col gap-3">
+        {STEPS.map((s, i) => (
+          <button
+            key={s.id}
+            onClick={() => scrollToStep(i)}
+            className="group flex items-center gap-2 justify-end"
+            title={s.label}
+          >
+            <span className={`text-xs font-medium transition-all duration-300 ${step === i ? 'opacity-100 text-foreground' : 'opacity-0 text-muted-foreground'} group-hover:opacity-100`}>
+              {s.label}
+            </span>
+            <div className={`rounded-full transition-all duration-300 ${step === i ? 'w-3 h-3 bg-primary shadow-lg shadow-primary/40' : 'w-2 h-2 bg-muted-foreground/40 hover:bg-primary/60'}`} />
+          </button>
+        ))}
+      </div>
+
+      {/* Step number top-left */}
+      <div className="fixed left-6 top-1/2 -translate-y-1/2 z-50">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={step}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.4 }}
+            className="flex flex-col items-center gap-1"
+          >
+            <span className="text-5xl font-bold text-primary/20 leading-none select-none">{STEPS[step]?.number}</span>
+            <div className="w-px h-12 bg-border" />
+            <span className="text-xs font-medium text-muted-foreground tracking-widest uppercase rotate-0">{STEPS[step]?.label}</span>
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      {/* Scroll sections */}
+      <div className="relative z-10">
+        {STEPS.map((s, i) => (
+          <section
+            key={s.id}
+            ref={el => sectionRefs.current[i] = el}
+            className="min-h-screen flex flex-col justify-center items-center px-4 py-24"
+          >
+            <div className="w-full max-w-2xl mx-auto">
+              {/* Section header */}
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.3 }}
+                transition={{ duration: 0.6 }}
+                className="mb-8"
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="text-xs font-bold tracking-widest text-primary uppercase">{s.number}</span>
+                  <div className="flex-1 h-px bg-border" />
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-widest">{i + 1} of {STEPS.length}</span>
+                </div>
+              </motion.div>
+
+              {/* Form card */}
+              <motion.div
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.2 }}
+                transition={{ duration: 0.7, delay: 0.1 }}
+                className="bg-card/80 backdrop-blur-md border border-border/50 rounded-2xl shadow-xl p-6 md:p-8"
+              >
+                {stepContent[i]}
+              </motion.div>
+
+              {/* Continue arrow / Submit */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: 0.4 }}
+                className="flex justify-center mt-8"
+              >
+                {i < STEPS.length - 1 ? (
+                  <button
+                    onClick={() => scrollToStep(i + 1)}
+                    className="flex flex-col items-center gap-1 text-muted-foreground hover:text-primary transition-colors group"
+                  >
+                    <span className="text-xs tracking-widest uppercase font-medium">Continue</span>
+                    <motion.div
+                      animate={{ y: [0, 5, 0] }}
+                      transition={{ repeat: Infinity, duration: 1.5 }}
+                    >
+                      <ChevronDown className="w-5 h-5" />
+                    </motion.div>
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleSubmit}
+                    disabled={submitting}
+                    className="relative flex items-center gap-3 px-10 py-4 text-base font-bold text-white rounded-2xl bg-primary overflow-hidden disabled:opacity-60"
+                    style={{ boxShadow: '0 0 30px rgba(91,164,245,0.5), 0 4px 20px rgba(0,0,0,0.2)' }}
+                  >
+                    <motion.span
+                      className="absolute inset-0 rounded-2xl bg-primary"
+                      animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0, 0.3] }}
+                      transition={{ repeat: Infinity, duration: 2 }}
+                    />
+                    <span className="relative z-10 flex items-center gap-2">
+                      {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                      {submitting ? "Saving..." : "Save Plan & Notify Contacts"}
+                    </span>
+                  </button>
+                )}
+              </motion.div>
+
+              {/* Back button */}
+              {i > 0 && (
+                <div className="flex justify-center mt-3">
+                  <button onClick={() => scrollToStep(i - 1)} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                    <ChevronUp className="w-3.5 h-3.5" /> Back to {STEPS[i - 1].label}
+                  </button>
+                </div>
+              )}
+            </div>
+          </section>
+        ))}
       </div>
     </div>
   );
