@@ -101,14 +101,18 @@ export default function TripForm() {
         ));
       }
 
-      // Build labeled email tasks so we can report failures by recipient
+      // Build labeled email tasks with metadata for confirmation page
       const emailTasks = [
         ...validContacts.map(contact => ({
-          label: `emergency contact "${contact.contact_name}" (${contact.contact_email})`,
+          name: contact.contact_name,
+          to: contact.contact_email,
+          type: "contact",
           promise: base44.integrations.Core.SendEmail({ to: contact.contact_email, subject, body: emailBody }),
         })),
         ...selectedAuthorities.filter(a => a.email).map(authority => ({
-          label: `authority "${authority.name}" (${authority.email})`,
+          name: authority.name,
+          to: authority.email,
+          type: "authority",
           promise: base44.integrations.Core.SendEmail({
             to: authority.email,
             subject: `[SAR Trip Plan] ${formData.primary_name || "Traveler"} — ${formData.park_name || "Outdoor Trip"}`,
@@ -116,7 +120,9 @@ export default function TripForm() {
           }),
         })),
         ...(user?.email ? [{
-          label: `your confirmation copy (${user.email})`,
+          name: "You (confirmation copy)",
+          to: user.email,
+          type: "self",
           promise: base44.integrations.Core.SendEmail({
             to: user.email,
             subject: `[Your Copy] ${subject}`,
@@ -126,15 +132,15 @@ export default function TripForm() {
       ];
 
       const results = await Promise.allSettled(emailTasks.map(t => t.promise));
-      results.forEach((result, i) => {
-        if (result.status === "rejected") {
-          const reason = result.reason?.message || String(result.reason) || "Unknown error";
-          toast.error(`Failed to email ${emailTasks[i].label}: ${reason}`, { duration: 8000 });
-        }
-      });
+      const emailResults = emailTasks.map((task, i) => ({
+        name: task.name,
+        to: task.to,
+        type: task.type,
+        success: results[i].status === "fulfilled",
+        error: results[i].status === "rejected" ? (results[i].reason?.message || "Unknown error") : null,
+      }));
+      sessionStorage.setItem(`email_results_${tripPlan.id}`, JSON.stringify(emailResults));
 
-      const totalSent = results.filter(r => r.status === "fulfilled").length - (user?.email ? 1 : 0);
-      toast.success(editId ? "Trip plan updated!" : (totalSent > 0 ? `Trip plan filed! Emails sent to ${totalSent} contact(s).` : "Trip plan saved!"));
       navigate("/confirmation?id=" + tripPlan.id);
     } catch (err) {
       toast.error("Something went wrong: " + err.message);
