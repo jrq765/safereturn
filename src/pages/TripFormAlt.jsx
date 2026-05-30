@@ -26,17 +26,19 @@ const INITIAL_DATA = {
   camping_tent: "", backpack_description: "", other_equipment: "",
 };
 
+const BG = "https://images.unsplash.com/photo-1448375240586-882707db888b?w=1920&auto=format&fit=crop";
+
 function Field({ label, children }) {
   return (
     <div className="mb-6">
-      <label className="block text-xs font-bold tracking-[0.15em] mb-2 uppercase" style={{color: '#023E13', opacity: 0.6}}>{label}</label>
+      <label className="block text-xs font-bold tracking-[0.15em] mb-2 uppercase text-foreground/60">{label}</label>
       {children}
     </div>
   );
 }
 
-const inputCls = "w-full bg-white text-sm px-4 py-3 focus:outline-none transition-colors font-inter" +
-  " border border-[#c8d8c0] focus:border-[#023E13] text-[#023E13] placeholder:text-[#023E13]/30";
+const inputCls = "w-full bg-white/70 text-sm px-4 py-3 focus:outline-none transition-colors font-inter" +
+  " border border-white/50 focus:border-accent/60 text-foreground placeholder:text-foreground/30 rounded-lg backdrop-blur-sm";
 
 export default function TripFormAlt() {
   const navigate = useNavigate();
@@ -173,11 +175,11 @@ export default function TripFormAlt() {
       );
       case 5: return (
         <>
-          <p className="text-xs text-neutral-500 mb-5 tracking-wide">These contacts will receive your trip plan and the family monitoring portal link via email.</p>
+          <p className="text-xs text-foreground/50 mb-5 tracking-wide">These contacts will receive your trip plan and the family monitoring portal link via email.</p>
           {contacts.map((c, i) => (
-            <div key={i} className="border border-neutral-200 p-4 mb-4">
+            <div key={i} className="border border-accent/20 bg-white/50 backdrop-blur-sm rounded-xl p-4 mb-4">
               <div className="flex justify-between items-center mb-3">
-                <span className="text-xs font-bold tracking-widest text-neutral-400">CONTACT {String(i + 1).padStart(2, "0")}</span>
+                <span className="text-xs font-bold tracking-widest text-accent/40">CONTACT {String(i + 1).padStart(2, "0")}</span>
                 {contacts.length > 1 && <button onClick={() => setContacts(cs => cs.filter((_, j) => j !== i))} className="text-xs text-red-500 hover:text-red-700">REMOVE</button>}
               </div>
               <div className="grid grid-cols-2 gap-3 mb-3">
@@ -195,7 +197,7 @@ export default function TripFormAlt() {
               </div>
             </div>
           ))}
-          <button onClick={() => setContacts(cs => [...cs, { contact_name: "", contact_email: "", contact_phone: "", relationship: "family" }])} className="text-xs font-bold tracking-widest text-neutral-500 hover:text-black border border-dashed border-neutral-300 w-full py-3 transition-colors">+ ADD CONTACT</button>
+          <button onClick={() => setContacts(cs => [...cs, { contact_name: "", contact_email: "", contact_phone: "", relationship: "family" }])} className="text-xs font-bold tracking-widest text-accent/50 hover:text-accent border border-dashed border-accent/30 rounded-lg w-full py-3 transition-colors">+ ADD CONTACT</button>
         </>
       );
       default: return null;
@@ -203,62 +205,62 @@ export default function TripFormAlt() {
   };
 
   return (
-    <div className="min-h-screen flex font-inter" style={{background: '#011a09'}}>
+    <div className="min-h-screen flex font-inter relative">
+      {/* Nature background */}
+      <div className="fixed inset-0 z-0">
+        <img src={BG} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-black/40" />
+      </div>
+
       {/* Sidebar */}
-      <div className="w-64 shrink-0 p-8 flex flex-col border-r" style={{borderColor: 'rgba(107,178,253,0.15)'}}>
-        <div className="mb-8">
+      <div className="relative z-10 w-72 shrink-0 flex flex-col border-r border-white/15 bg-black/40 backdrop-blur-xl">
+        {/* Big logo */}
+        <div className="px-6 pt-8 pb-6 border-b border-white/15">
           <img
             src="https://media.base44.com/images/public/6a1b2bf2fc37b8175a269ec2/b59cfd204_ChatGPTImageMay30202601_47_28PM.png"
             alt="SafeReturn"
-            className="h-14 w-auto object-contain"
+            className="h-28 w-auto object-contain"
           />
         </div>
-        <p className="text-[10px] font-bold tracking-[0.2em] mb-6" style={{color: 'rgba(107,178,253,0.5)'}}>FILING PROGRESS</p>
-        <nav className="flex flex-col gap-1">
-          {STEPS.map((s, i) => (
-            <button
-              key={s.id}
-              onClick={() => goTo(i)}
-              className={`text-left px-3 py-2 text-xs font-bold tracking-[0.12em] transition-all ${
-                i === step
-                  ? "text-black"
-                  : i < step
-                  ? "hover:text-white"
-                  : "hover:opacity-70"
-              }`}
-              style={{
-                background: i === step ? '#6BB2FD' : 'transparent',
-                color: i === step ? '#011a09' : i < step ? '#6BB2FD' : 'rgba(255,255,255,0.35)',
-              }}
-            >
-              {s.number} {s.label}
-            </button>
-          ))}
-        </nav>
 
-        <div className="mt-auto pt-8">
-          <div className="text-[10px] tracking-widest" style={{color: 'rgba(107,178,253,0.3)'}}>SAFERETURN</div>
-          <div className="text-[10px]" style={{color: 'rgba(107,178,253,0.3)'}}>TRIP FILING SYSTEM</div>
+        {/* Steps nav */}
+        <div className="px-6 pt-6">
+          <p className="text-[10px] font-bold tracking-[0.2em] mb-4 text-white/40">FILING PROGRESS</p>
+          <nav className="flex flex-col gap-1">
+            {STEPS.map((s, i) => (
+              <button
+                key={s.id}
+                onClick={() => goTo(i)}
+                className="text-left px-3 py-2.5 text-xs font-bold tracking-[0.12em] rounded-lg transition-all"
+                style={{
+                  background: i === step ? 'rgba(107,178,253,0.25)' : 'transparent',
+                  color: i === step ? '#6BB2FD' : i < step ? 'rgba(107,178,253,0.7)' : 'rgba(255,255,255,0.35)',
+                  borderLeft: i === step ? '2px solid #6BB2FD' : '2px solid transparent',
+                }}
+              >
+                {s.number} {s.label}
+              </button>
+            ))}
+          </nav>
         </div>
       </div>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col">
-        <div className="flex-1 m-4 ml-0 flex flex-col" style={{ background: '#f5f7f2', clipPath: "polygon(12px 0, 100% 0, 100% 100%, 0 100%, 0 12px)" }}>
+      <div className="relative z-10 flex-1 flex flex-col">
+        <div className="flex-1 m-4 ml-0 flex flex-col bg-white/80 backdrop-blur-2xl rounded-r-2xl overflow-hidden shadow-2xl">
           <div className="flex-1 p-10 overflow-y-auto">
-            <p className="text-[10px] font-bold tracking-[0.2em] mb-2" style={{color: '#023E13', opacity: 0.5}}>SECTION {STEPS[step].number}</p>
-            <h1 className="text-3xl font-black tracking-tight mb-4" style={{color: '#023E13'}}>{STEPS[step].label}</h1>
-            <div className="border-t mb-8" style={{borderColor: '#023E13'}} />
+            <p className="text-[10px] font-bold tracking-[0.2em] mb-2 text-accent/50">SECTION {STEPS[step].number}</p>
+            <h1 className="text-3xl font-black tracking-tight mb-4 text-accent">{STEPS[step].label}</h1>
+            <div className="border-t border-accent/20 mb-8" />
             {renderStep()}
           </div>
 
           {/* Continue button */}
-          <div className="border-t" style={{borderColor: '#c8d8c0'}}>
+          <div className="border-t border-accent/15">
             {step < STEPS.length - 1 ? (
               <button
                 onClick={() => goTo(step + 1)}
-                className="w-full py-5 text-xs font-black tracking-[0.25em] text-white transition-colors hover:opacity-90"
-                style={{background: '#023E13'}}
+                className="w-full py-5 text-xs font-black tracking-[0.25em] text-white bg-accent hover:bg-accent/90 transition-colors"
               >
                 CONTINUE
               </button>
@@ -266,8 +268,7 @@ export default function TripFormAlt() {
               <button
                 onClick={handleSubmit}
                 disabled={submitting}
-                className="w-full py-5 text-xs font-black tracking-[0.25em] text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-3 hover:opacity-90"
-                style={{background: '#023E13'}}
+                className="w-full py-5 text-xs font-black tracking-[0.25em] text-white bg-accent hover:bg-accent/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-3"
               >
                 {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> FILING PLAN...</> : "FILE TRIP PLAN"}
               </button>

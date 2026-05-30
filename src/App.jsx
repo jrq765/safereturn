@@ -51,8 +51,8 @@ const AuthenticatedApp = () => {
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
-      <Route path="/new-plan" element={<TripForm />} />
-      <Route path="/new-plan-alt" element={<TripFormAlt />} />
+      <Route path="/new-plan" element={<TripFormAlt />} />
+      <Route path="/new-plan-classic" element={<TripForm />} />
       <Route element={<Layout />}>
         <Route path="/" element={<Home />} />
       </Route>
