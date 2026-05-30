@@ -13,12 +13,30 @@ import formatTripEmail from "@/utils/formatTripEmail";
 import { motion, AnimatePresence } from "framer-motion";
 
 const STEP_VIDEOS = [
-  "https://assets.mixkit.co/videos/preview/mixkit-aerial-view-of-a-river-running-through-a-forest-41892-large.mp4",
-  "https://assets.mixkit.co/videos/preview/mixkit-forest-stream-in-the-sunlight-529-large.mp4",
-  "https://assets.mixkit.co/videos/preview/mixkit-clouds-and-blue-sky-2408-large.mp4",
-  "https://assets.mixkit.co/videos/preview/mixkit-rocky-mountain-river-flowing-through-a-forest-41888-large.mp4",
-  "https://assets.mixkit.co/videos/preview/mixkit-landscape-with-mountains-at-sunset-4119-large.mp4",
-  "https://assets.mixkit.co/videos/preview/mixkit-stars-in-space-background-1610-large.mp4",
+  {
+    src: "https://assets.mixkit.co/videos/preview/mixkit-aerial-view-of-a-river-running-through-a-forest-41892-large.mp4",
+    poster: "https://images.unsplash.com/photo-1448375240586-882707db888b?w=1920&auto=format&fit=crop"
+  },
+  {
+    src: "https://assets.mixkit.co/videos/preview/mixkit-forest-stream-in-the-sunlight-529-large.mp4",
+    poster: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1920&auto=format&fit=crop"
+  },
+  {
+    src: "https://assets.mixkit.co/videos/preview/mixkit-clouds-and-blue-sky-2408-large.mp4",
+    poster: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&auto=format&fit=crop"
+  },
+  {
+    src: "https://assets.mixkit.co/videos/preview/mixkit-rocky-mountain-river-flowing-through-a-forest-41888-large.mp4",
+    poster: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1920&auto=format&fit=crop"
+  },
+  {
+    src: "https://assets.mixkit.co/videos/preview/mixkit-landscape-with-mountains-at-sunset-4119-large.mp4",
+    poster: "https://images.unsplash.com/photo-1501854140801-50d01698950b?w=1920&auto=format&fit=crop"
+  },
+  {
+    src: "https://assets.mixkit.co/videos/preview/mixkit-stars-in-space-background-1610-large.mp4",
+    poster: "https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?w=1920&auto=format&fit=crop"
+  },
 ];
 
 const STEPS = [
@@ -187,13 +205,22 @@ export default function TripForm() {
         <div
           key={i}
           className="fixed inset-0 z-0 overflow-hidden transition-opacity duration-1000"
-          style={{ opacity: step === i ? 1 : 0, pointerEvents: 'none' }}
+          style={{ opacity: step === i ? 1 : 0, pointerEvents: 'none', transition: 'opacity 1s ease' }}
         >
           <video
             autoPlay muted loop playsInline
             className="w-full h-full object-cover"
-            style={{ opacity: 0.18 }}
-            src={src}
+            style={{ opacity: 0.35 }}
+            poster={src.poster}
+          >
+            <source src={src.src} type="video/mp4" />
+          </video>
+          {/* Poster image shown instantly as fallback */}
+          <img
+            src={src.poster}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ opacity: 0.25, zIndex: -1 }}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background/80" />
         </div>
