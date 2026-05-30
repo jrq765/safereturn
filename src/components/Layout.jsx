@@ -23,7 +23,7 @@ export default function Layout() {
             <img
               src="https://media.base44.com/images/public/6a1b2bf2fc37b8175a269ec2/b59cfd204_ChatGPTImageMay30202601_47_28PM.png"
               alt="SafeReturn"
-              className="h-14 w-auto object-contain"
+              className="h-20 w-auto object-contain"
             />
           </Link>
 
