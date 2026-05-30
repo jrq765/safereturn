@@ -101,27 +101,39 @@ export default function TripForm() {
         ));
       }
 
-      // Send all emails in parallel, failures don't block navigation
-      const emailPromises = [
-        ...validContacts.map(contact =>
-          base44.integrations.Core.SendEmail({ to: contact.contact_email, subject, body: emailBody })
-        ),
-        ...selectedAuthorities.filter(a => a.email).map(authority =>
-          base44.integrations.Core.SendEmail({
+      // Build labeled email tasks so we can report failures by recipient
+      const emailTasks = [
+        ...validContacts.map(contact => ({
+          label: `emergency contact "${contact.contact_name}" (${contact.contact_email})`,
+          promise: base44.integrations.Core.SendEmail({ to: contact.contact_email, subject, body: emailBody }),
+        })),
+        ...selectedAuthorities.filter(a => a.email).map(authority => ({
+          label: `authority "${authority.name}" (${authority.email})`,
+          promise: base44.integrations.Core.SendEmail({
             to: authority.email,
             subject: `[SAR Trip Plan] ${formData.primary_name || "Traveler"} — ${formData.park_name || "Outdoor Trip"}`,
             body: emailBody,
-          })
-        ),
-        ...(user?.email ? [base44.integrations.Core.SendEmail({
-          to: user.email,
-          subject: `[Your Copy] ${subject}`,
-          body: emailBody + `<br/><br/><hr/><p style="color:#888;font-size:12px">This is your confirmation copy of the trip plan notification sent to your emergency contacts and authorities.</p>`,
-        })] : []),
+          }),
+        })),
+        ...(user?.email ? [{
+          label: `your confirmation copy (${user.email})`,
+          promise: base44.integrations.Core.SendEmail({
+            to: user.email,
+            subject: `[Your Copy] ${subject}`,
+            body: emailBody + `<br/><br/><hr/><p style="color:#888;font-size:12px">This is your confirmation copy of the trip plan notification sent to your emergency contacts and authorities.</p>`,
+          }),
+        }] : []),
       ];
-      await Promise.allSettled(emailPromises);
 
-      const totalSent = validContacts.length + selectedAuthorities.filter(a => a.email).length;
+      const results = await Promise.allSettled(emailTasks.map(t => t.promise));
+      results.forEach((result, i) => {
+        if (result.status === "rejected") {
+          const reason = result.reason?.message || String(result.reason) || "Unknown error";
+          toast.error(`Failed to email ${emailTasks[i].label}: ${reason}`, { duration: 8000 });
+        }
+      });
+
+      const totalSent = results.filter(r => r.status === "fulfilled").length - (user?.email ? 1 : 0);
       toast.success(editId ? "Trip plan updated!" : (totalSent > 0 ? `Trip plan filed! Emails sent to ${totalSent} contact(s).` : "Trip plan saved!"));
       navigate("/confirmation?id=" + tripPlan.id);
     } catch (err) {
