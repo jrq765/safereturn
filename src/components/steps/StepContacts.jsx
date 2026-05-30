@@ -2,10 +2,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Heart, Building2 } from "lucide-react";
-import AuthorityFinder from "@/components/AuthorityFinder";
+import { Plus, Trash2, Heart } from "lucide-react";
 
-export default function StepContacts({ contacts, onContactsChange, parkName, selectedAuthorities, onAuthoritiesChange }) {
+export default function StepContacts({ contacts, onContactsChange }) {
   const addContact = () => {
     onContactsChange([...contacts, { contact_name: "", contact_email: "", contact_phone: "", relationship: "family" }]);
   };
@@ -89,17 +88,7 @@ export default function StepContacts({ contacts, onContactsChange, parkName, sel
         </p>
       )}
 
-      <div className="bg-card rounded-xl border border-border p-5 space-y-4">
-        <div className="flex items-center gap-2">
-          <Building2 className="w-5 h-5 text-accent" />
-          <h3 className="font-semibold text-foreground">Notify Local Authorities</h3>
-        </div>
-        <AuthorityFinder
-          parkName={parkName}
-          selectedAuthorities={selectedAuthorities}
-          onAuthoritiesChange={onAuthoritiesChange}
-        />
-      </div>
+
     </div>
   );
 }

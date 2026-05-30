@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, Save, Loader2 } from "lucide-react";
+import { User, Save, Loader2, Camera } from "lucide-react";
 import { toast } from "sonner";
 
 const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
@@ -12,6 +12,8 @@ const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 export default function Profile() {
   const [user, setUser] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [photoUrl, setPhotoUrl] = useState("");
   const [form, setForm] = useState({
     saved_primary_name: "",
     saved_primary_phone: "",
@@ -30,10 +32,22 @@ export default function Profile() {
         saved_primary_blood_type: u.saved_primary_blood_type || "",
         saved_emergency_device: u.saved_emergency_device || "",
       });
+      setPhotoUrl(u.profile_photo_url || "");
     });
   }, []);
 
   const update = (field, value) => setForm(f => ({ ...f, [field]: value }));
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    setPhotoUrl(file_url);
+    await base44.auth.updateMe({ profile_photo_url: file_url });
+    setUploading(false);
+    toast.success("Photo updated!");
+  };
 
   const save = async () => {
     setSaving(true);
@@ -46,9 +60,17 @@ export default function Profile() {
 
   return (
     <div className="max-w-xl mx-auto px-4 py-10 font-inter">
-      <div className="flex items-center gap-3 mb-8">
-        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-          <User className="w-6 h-6 text-primary" />
+      <div className="flex items-center gap-4 mb-8">
+        <div className="relative">
+          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden border-2 border-border">
+            {photoUrl
+              ? <img src={photoUrl} alt="Profile" className="w-full h-full object-cover" />
+              : <User className="w-8 h-8 text-primary" />}
+          </div>
+          <label className="absolute bottom-0 right-0 w-6 h-6 bg-accent rounded-full flex items-center justify-center cursor-pointer hover:bg-accent/80 transition-colors">
+            {uploading ? <Loader2 className="w-3 h-3 text-white animate-spin" /> : <Camera className="w-3 h-3 text-white" />}
+            <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={uploading} />
+          </label>
         </div>
         <div>
           <h1 className="text-2xl font-bold text-foreground">{user.full_name || user.email}</h1>
