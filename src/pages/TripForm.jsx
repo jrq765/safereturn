@@ -271,9 +271,9 @@ export default function TripForm() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 1.05 }}
               transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
-              className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-2xl p-6 md:p-8"
+              className="bg-black/55 backdrop-blur-md border border-white/20 rounded-2xl shadow-2xl p-6 md:p-8"
             >
-              <div className="text-white [&_label]:text-white/90 [&_input]:bg-white/10 [&_input]:border-white/20 [&_input]:text-white [&_input]:placeholder:text-white/40 [&_textarea]:bg-white/10 [&_textarea]:border-white/20 [&_textarea]:text-white [&_textarea]:placeholder:text-white/40 [&_select]:bg-white/10 [&_select]:border-white/20 [&_select]:text-white [&_h2]:text-white [&_h3]:text-white [&_p]:text-white/80">
+              <div className="text-white [&_label]:text-white/90 [&_label]:font-medium [&_input]:bg-white/15 [&_input]:border-white/30 [&_input]:text-white [&_input]:placeholder:text-white/50 [&_input:focus]:bg-white/20 [&_input:focus]:border-white/50 [&_textarea]:bg-white/15 [&_textarea]:border-white/30 [&_textarea]:text-white [&_textarea]:placeholder:text-white/50 [&_h2]:text-white [&_h3]:text-white/90 [&_p]:text-white/75 [&_.bg-card]:bg-white/10 [&_.bg-card]:border-white/20 [&_.border-border]:border-white/20 [&_.text-foreground]:text-white [&_.text-muted-foreground]:text-white/60 [&_.text-accent]:text-blue-300 [&_button[type=button]]:text-white [&_button[type=button]]:border-white/30 [&_button[type=button]:hover]:bg-white/20 [&_.bg-primary\/5]:bg-white/10 [&_.bg-primary\/10]:bg-white/15 [&_.border-primary\/20]:border-white/25 [&_.bg-muted]:bg-white/10 [&_[role=combobox]]:bg-white/15 [&_[role=combobox]]:border-white/30 [&_[role=combobox]]:text-white">
                 {stepContent[step]}
               </div>
             </motion.div>
