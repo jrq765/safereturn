@@ -81,6 +81,7 @@ export default function TripForm() {
         tripPlan = await base44.entities.TripPlan.create({ ...formData, status: "active", authority_contacts: selectedAuthorities });
       }
 
+      const user = await base44.auth.me();
       const emailBody = formatTripEmail(formData);
       const subject = `Trip Plan Filed: ${formData.primary_name || "Traveler"} — ${formData.park_name || "Outdoor Trip"}`;
 
@@ -107,6 +108,15 @@ export default function TripForm() {
             body: emailBody,
           });
         }
+      }
+
+      // Forward copy to the submitting user
+      if (user?.email) {
+        await base44.integrations.Core.SendEmail({
+          to: user.email,
+          subject: `[Your Copy] ${subject}`,
+          body: emailBody + `<br/><br/><hr/><p style="color:#888;font-size:12px">This is your confirmation copy of the trip plan notification sent to your emergency contacts and authorities.</p>`,
+        });
       }
 
       const totalSent = validContacts.length + selectedAuthorities.filter(a => a.email).length;
