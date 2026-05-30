@@ -12,7 +12,14 @@ import { toast } from "sonner";
 import formatTripEmail from "@/utils/formatTripEmail";
 import { motion, AnimatePresence } from "framer-motion";
 
-const NATURE_VIDEO = "https://assets.mixkit.co/videos/preview/mixkit-aerial-view-of-a-river-running-through-a-forest-41892-large.mp4";
+const STEP_VIDEOS = [
+  "https://assets.mixkit.co/videos/preview/mixkit-aerial-view-of-a-river-running-through-a-forest-41892-large.mp4",
+  "https://assets.mixkit.co/videos/preview/mixkit-forest-stream-in-the-sunlight-529-large.mp4",
+  "https://assets.mixkit.co/videos/preview/mixkit-clouds-and-blue-sky-2408-large.mp4",
+  "https://assets.mixkit.co/videos/preview/mixkit-rocky-mountain-river-flowing-through-a-forest-41888-large.mp4",
+  "https://assets.mixkit.co/videos/preview/mixkit-landscape-with-mountains-at-sunset-4119-large.mp4",
+  "https://assets.mixkit.co/videos/preview/mixkit-stars-in-space-background-1610-large.mp4",
+];
 
 const STEPS = [
   { id: "who",       label: "Who",       number: "01" },
@@ -175,17 +182,22 @@ export default function TripForm() {
 
   return (
     <div ref={containerRef} className="relative font-inter">
-      {/* Fixed nature video background */}
-      <div className="fixed inset-0 z-0 overflow-hidden">
-        <video
-          autoPlay muted loop playsInline
-          className="w-full h-full object-cover"
-          style={{ opacity: 0.18 }}
+      {/* Fixed nature video backgrounds — one per step */}
+      {STEP_VIDEOS.map((src, i) => (
+        <div
+          key={i}
+          className="fixed inset-0 z-0 overflow-hidden transition-opacity duration-1000"
+          style={{ opacity: step === i ? 1 : 0, pointerEvents: 'none' }}
         >
-          <source src={NATURE_VIDEO} type="video/mp4" />
-        </video>
-        <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background/80" />
-      </div>
+          <video
+            autoPlay muted loop playsInline
+            className="w-full h-full object-cover"
+            style={{ opacity: 0.18 }}
+            src={src}
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background/80" />
+        </div>
+      ))}
 
       {/* Side step dots */}
       <div className="fixed right-6 top-1/2 -translate-y-1/2 z-50 flex flex-col gap-3">
