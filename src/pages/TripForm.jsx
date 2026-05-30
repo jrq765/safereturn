@@ -33,53 +33,55 @@ export default function TripForm() {
   const [selectedAuthorities, setSelectedAuthorities] = useState([]);
   const [submitting, setSubmitting] = useState(false);
 
-  const canProceed = () => {
-    if (step === 0) return formData.primary_name && formData.primary_phone;
-    if (step === 5) return contacts.some(c => c.contact_name && c.contact_email);
-    return true;
-  };
+  const canProceed = () => true;
 
   const handleSubmit = async () => {
     setSubmitting(true);
-    const tripPlan = await base44.entities.TripPlan.create({
-      ...formData,
-      status: "active",
-      authority_contacts: selectedAuthorities,
-    });
-
-    const emailBody = formatTripEmail(formData);
-    const subject = `Trip Plan Filed: ${formData.primary_name} — ${formData.park_name || "Outdoor Trip"}`;
-
-    const validContacts = contacts.filter(c => c.contact_name && c.contact_email);
-    for (const contact of validContacts) {
-      await base44.entities.EmergencyContact.create({
-        trip_plan_id: tripPlan.id,
-        contact_name: contact.contact_name,
-        contact_email: contact.contact_email,
-        contact_phone: contact.contact_phone,
-        relationship: contact.relationship,
-        notification_sent: true,
+    try {
+      const tripPlan = await base44.entities.TripPlan.create({
+        ...formData,
+        status: "active",
+        authority_contacts: selectedAuthorities,
       });
-      await base44.integrations.Core.SendEmail({
-        to: contact.contact_email,
-        subject,
-        body: emailBody,
-      });
-    }
 
-    for (const authority of selectedAuthorities) {
-      if (authority.email) {
+      const emailBody = formatTripEmail(formData);
+      const subject = `Trip Plan Filed: ${formData.primary_name || "Traveler"} — ${formData.park_name || "Outdoor Trip"}`;
+
+      const validContacts = contacts.filter(c => c.contact_name && c.contact_email);
+      for (const contact of validContacts) {
+        await base44.entities.EmergencyContact.create({
+          trip_plan_id: tripPlan.id,
+          contact_name: contact.contact_name,
+          contact_email: contact.contact_email,
+          contact_phone: contact.contact_phone,
+          relationship: contact.relationship,
+          notification_sent: true,
+        });
         await base44.integrations.Core.SendEmail({
-          to: authority.email,
-          subject: `[SAR Trip Plan] ${formData.primary_name} — ${formData.park_name || "Outdoor Trip"}`,
+          to: contact.contact_email,
+          subject,
           body: emailBody,
         });
       }
-    }
 
-    toast.success(`Trip plan filed! Emails sent to ${validContacts.length + selectedAuthorities.filter(a => a.email).length} contact(s).`);
-    navigate("/confirmation?id=" + tripPlan.id);
-    setSubmitting(false);
+      for (const authority of selectedAuthorities) {
+        if (authority.email) {
+          await base44.integrations.Core.SendEmail({
+            to: authority.email,
+            subject: `[SAR Trip Plan] ${formData.primary_name || "Traveler"} — ${formData.park_name || "Outdoor Trip"}`,
+            body: emailBody,
+          });
+        }
+      }
+
+      const totalSent = validContacts.length + selectedAuthorities.filter(a => a.email).length;
+      toast.success(totalSent > 0 ? `Trip plan filed! Emails sent to ${totalSent} contact(s).` : "Trip plan saved!");
+      navigate("/confirmation?id=" + tripPlan.id);
+    } catch (err) {
+      toast.error("Something went wrong: " + err.message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const stepComponents = [
