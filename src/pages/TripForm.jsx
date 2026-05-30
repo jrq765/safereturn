@@ -10,7 +10,6 @@ import StepWhen from "@/components/steps/StepWhen";
 import StepWhat from "@/components/steps/StepWhat";
 import StepEquipment from "@/components/steps/StepEquipment";
 import StepContacts from "@/components/steps/StepContacts";
-import formatTripEmail from "@/utils/formatTripEmail";
 import { toast } from "sonner";
 
 const INITIAL_DATA = {
@@ -30,6 +29,7 @@ export default function TripForm() {
   const [step, setStep] = useState(0);
   const [formData, setFormData] = useState(INITIAL_DATA);
   const [contacts, setContacts] = useState([{ contact_name: "", contact_email: "", contact_phone: "", relationship: "family" }]);
+  const [selectedAuthorities, setSelectedAuthorities] = useState([]);
   const [submitting, setSubmitting] = useState(false);
 
   const canProceed = () => {
@@ -43,11 +43,10 @@ export default function TripForm() {
     const tripPlan = await base44.entities.TripPlan.create({
       ...formData,
       status: "active",
+      authority_contacts: selectedAuthorities,
     });
 
-    const emailBody = formatTripEmail(formData);
     const validContacts = contacts.filter(c => c.contact_name && c.contact_email);
-
     for (const contact of validContacts) {
       await base44.entities.EmergencyContact.create({
         trip_plan_id: tripPlan.id,
@@ -55,17 +54,11 @@ export default function TripForm() {
         contact_email: contact.contact_email,
         contact_phone: contact.contact_phone,
         relationship: contact.relationship,
-        notification_sent: true,
-      });
-
-      await base44.integrations.Core.SendEmail({
-        to: contact.contact_email,
-        subject: `Trip Plan Filed: ${formData.primary_name} — ${formData.park_name || "Outdoor Trip"}`,
-        body: emailBody,
+        notification_sent: false,
       });
     }
 
-    toast.success("Trip plan filed and contacts notified!");
+    toast.success("Trip plan saved! Now send notifications to your contacts.");
     navigate("/confirmation?id=" + tripPlan.id);
     setSubmitting(false);
   };
@@ -76,43 +69,34 @@ export default function TripForm() {
     <StepWhen key="when" data={formData} onChange={setFormData} />,
     <StepWhat key="what" data={formData} onChange={setFormData} />,
     <StepEquipment key="equip" data={formData} onChange={setFormData} />,
-    <StepContacts key="contacts" contacts={contacts} onContactsChange={setContacts} />,
+    <StepContacts
+      key="contacts"
+      contacts={contacts}
+      onContactsChange={setContacts}
+      parkName={formData.park_name}
+      selectedAuthorities={selectedAuthorities}
+      onAuthoritiesChange={setSelectedAuthorities}
+    />,
   ];
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 font-inter">
       <FormProgress currentStep={step} />
-
       <div className="min-h-[400px]">
         {stepComponents[step]}
       </div>
-
       <div className="flex items-center justify-between mt-8 pt-6 border-t border-border">
-        <Button
-          variant="outline"
-          onClick={() => setStep(s => s - 1)}
-          disabled={step === 0}
-          className="gap-2"
-        >
+        <Button variant="outline" onClick={() => setStep(s => s - 1)} disabled={step === 0} className="gap-2">
           <ArrowLeft className="w-4 h-4" /> Back
         </Button>
-
         {step < 5 ? (
-          <Button
-            onClick={() => setStep(s => s + 1)}
-            disabled={!canProceed()}
-            className="gap-2 bg-primary hover:bg-primary/90 text-white"
-          >
+          <Button onClick={() => setStep(s => s + 1)} disabled={!canProceed()} className="gap-2 bg-primary hover:bg-primary/90 text-white">
             Next <ArrowRight className="w-4 h-4" />
           </Button>
         ) : (
-          <Button
-            onClick={handleSubmit}
-            disabled={!canProceed() || submitting}
-            className="gap-2 bg-accent hover:bg-accent/90 text-accent-foreground"
-          >
+          <Button onClick={handleSubmit} disabled={!canProceed() || submitting} className="gap-2 bg-accent hover:bg-accent/90 text-accent-foreground">
             {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-            {submitting ? "Sending..." : "Submit & Notify Contacts"}
+            {submitting ? "Saving..." : "Save Plan & Notify Contacts"}
           </Button>
         )}
       </div>
