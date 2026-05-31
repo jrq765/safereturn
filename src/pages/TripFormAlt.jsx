@@ -735,17 +735,39 @@ export default function TripFormAlt() {
         const returnStr = formData.expected_return_datetime
           ? moment(formData.expected_return_datetime).format("h:mm A [on] MMMM D, YYYY")
           : "[return time not set]";
+        const deviceList = (formData.emergency_device_types || []).join(", ") + (formData.emergency_device_other ? ` (${formData.emergency_device_other})` : "");
         const summaryRows = [
+          ["— MISSION —", ""],
           ["Activity", formData.travel_method || "—"],
           ["Destination", formData.park_name || "—"],
           ["County / Region", formData.county_region || "—"],
+          ["Visitor Center", formData.visitor_center || "—"],
+          ["Overnight Stay", formData.accommodation_yes ? (formData.accommodation_type || "Yes") : "No — day trip"],
           ["Departure", fmtDt(formData.departure_datetime)],
-          ["Expected Return", fmtDt(formData.expected_return_datetime)],
+          ["Exit from Park", fmtDt(formData.departure_from_park_datetime)],
+          ["Return Home By", fmtDt(formData.expected_return_datetime)],
+          ["— ROUTE —", ""],
           ["Route Notes", formData.route_notes || "—"],
+          ["Backup Plan", formData.backup_activity || "—"],
+          ["— PEOPLE —", ""],
           ["Main Traveler", [formData.primary_name, formData.primary_age && `Age ${formData.primary_age}`, formData.primary_phone].filter(Boolean).join(" · ") || "—"],
+          ["Email", formData.primary_email || "—"],
+          ["Emergency Device", deviceList || "None"],
+          ["Group Size", String(formData.total_participants || 1)],
+          ["— CONTACTS —", ""],
           ["Emergency Contacts", contacts.filter(c => c.contact_name).map(c => `${c.contact_name} (${c.relationship})`).join(", ") || "—"],
+          ["— VEHICLE —", ""],
           ["Vehicle", [v.vehicle_color, v.vehicle_make, v.vehicle_model, v.vehicle_license].filter(Boolean).join(" ") || "—"],
-          ["Gear", (formData.gear_checklist || []).join(", ") || "—"],
+          ["Parked At", v.vehicle_location || "—"],
+          ["— GEAR —", ""],
+          ["Checklist", (formData.gear_checklist || []).join(", ") || "—"],
+          ["Other Gear", formData.other_equipment || "—"],
+          ["— MEDICAL —", ""],
+          ["Blood Type", formData.primary_blood_type || "Unknown"],
+          ["Allergies", formData.allergies || "None reported"],
+          ["Medications", formData.medications || "None reported"],
+          ["Conditions", formData.medical_conditions || "None reported"],
+          ["Medical Notes", formData.emergency_medical_notes || "—"],
         ];
 
         return (
@@ -817,7 +839,7 @@ export default function TripFormAlt() {
       <div className="fixed right-6 top-1/2 -translate-y-1/2 z-50 flex flex-col gap-2.5">
         {STEPS.map((s, i) => (
           <button key={s.id} onClick={() => goTo(i)} title={s.label} className="group flex items-center gap-2 justify-end">
-            <span className={`text-xs font-medium transition-all duration-300 text-white ${step === i ? "opacity-100" : "opacity-0"} group-hover:opacity-100`}>{s.label}</span>
+            <span className={`text-xs font-medium transition-all duration-300 text-white ${step === i ? "opacity-100 font-bold" : "opacity-40 hover:opacity-80"}`}>{s.label}</span>
             <div className={`rounded-full transition-all duration-300 ${step === i ? "w-3 h-3 bg-white shadow-lg" : "w-2 h-2 bg-white/40 hover:bg-white/70"}`} />
           </button>
         ))}

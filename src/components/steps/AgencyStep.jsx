@@ -25,7 +25,8 @@ export default function AgencyStep({ formData, setFormData }) {
     try {
       const result = await base44.integrations.Core.InvokeLLM({
         model: "gemini_3_flash",
-        prompt: `Find the REAL, accurate contact information for the county sheriff or search and rescue (SAR) agency that has jurisdiction over this location: "${destination}". Search the web and return verified, current data from official government sources. Return JSON with: name (full official agency name), county (county and state), phone (non-emergency number in format (XXX) XXX-XXXX), email (official email or null), address (full physical address), website (official URL or null), notes (e.g. SAR is volunteer unit under sheriff - or null if nothing notable). Only include data you confirmed from official sources.`,
+        add_context_from_internet: true,
+        prompt: `What is the county sheriff or Search and Rescue agency for: "${destination}"? Return JSON only: name, county, phone (non-emergency), email (or null), address, website (or null), notes (or null).`,
         response_json_schema: {
           type: "object",
           properties: {
