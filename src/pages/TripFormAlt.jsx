@@ -8,14 +8,14 @@ import formatTripEmail from "@/utils/formatTripEmail";
 import moment from "moment";
 
 const STEPS = [
-  { id: "mission",      label: "MISSION",           number: "01" },
-  { id: "route",        label: "ROUTE",              number: "02" },
-  { id: "people",       label: "PEOPLE & CONTACTS",  number: "03" },
-  { id: "vehicle",      label: "VEHICLE",            number: "04" },
-  { id: "gear",         label: "GEAR",               number: "05" },
-  { id: "medical",      label: "MEDICAL",            number: "06" },
-  { id: "agency",       label: "AGENCY",             number: "07" },
-  { id: "confirmation", label: "CONFIRMATION",       number: "08" },
+  { id: "mission",      label: "Mission",           number: "01", sub: "Where are you going and when?" },
+  { id: "route",        label: "Route",             number: "02", sub: "Your planned path and area." },
+  { id: "people",       label: "People & Contacts", number: "03", sub: "Who's going and who to call." },
+  { id: "vehicle",      label: "Vehicle",           number: "04", sub: "How you're getting there." },
+  { id: "gear",         label: "Gear",              number: "05", sub: "What you're bringing." },
+  { id: "medical",      label: "Medical",           number: "06", sub: "Health info for responders." },
+  { id: "agency",       label: "Agency",            number: "07", sub: "Identify local SAR agency." },
+  { id: "confirmation", label: "Confirm & File",    number: "08", sub: "Review and submit your plan." },
 ];
 
 const GEAR_ITEMS = [
@@ -506,21 +506,28 @@ export default function TripFormAlt() {
         </div>
 
         {/* Steps nav */}
-        <div className="px-6 pt-6 flex-1">
-          <p className="text-[10px] font-bold tracking-[0.2em] mb-4 text-white/40">FILING PROGRESS</p>
-          <nav className="flex flex-col gap-1">
+        <div className="px-5 pt-5 flex-1 overflow-y-auto">
+          <p className="text-[9px] font-bold tracking-[0.22em] mb-3 text-white/30">TRIP PLAN PROGRESS</p>
+          <nav className="flex flex-col gap-0.5">
             {STEPS.map((s, i) => (
               <button
                 key={s.id}
                 onClick={() => goTo(i)}
-                className="text-left px-3 py-2.5 text-xs font-bold tracking-[0.12em] rounded-lg transition-all"
+                className="text-left px-3 py-2 rounded-lg transition-all group"
                 style={{
-                  background: i === step ? 'rgba(107,178,253,0.25)' : 'transparent',
-                  color: i === step ? '#6BB2FD' : i < step ? 'rgba(107,178,253,0.7)' : 'rgba(255,255,255,0.35)',
+                  background: i === step ? 'rgba(107,178,253,0.2)' : 'transparent',
                   borderLeft: i === step ? '2px solid #6BB2FD' : '2px solid transparent',
                 }}
               >
-                {s.number} {s.label}
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-black"
+                    style={{ color: i === step ? '#6BB2FD' : i < step ? 'rgba(107,178,253,0.6)' : 'rgba(255,255,255,0.25)' }}
+                  >{s.number}</span>
+                  <span className="text-xs font-bold tracking-[0.1em]"
+                    style={{ color: i === step ? '#6BB2FD' : i < step ? 'rgba(107,178,253,0.7)' : 'rgba(255,255,255,0.35)' }}
+                  >{s.label}</span>
+                  {i < step && <span className="ml-auto text-[10px] text-blue-400/60">✓</span>}
+                </div>
               </button>
             ))}
           </nav>
@@ -540,10 +547,13 @@ export default function TripFormAlt() {
       {/* Main content */}
       <div className="relative z-10 flex-1 flex flex-col">
         <div className="flex-1 m-4 ml-0 flex flex-col bg-white/80 backdrop-blur-2xl rounded-r-2xl overflow-hidden shadow-2xl">
-          <div className="flex-1 p-10 overflow-y-auto">
-            <p className="text-[10px] font-bold tracking-[0.2em] mb-2 text-accent/50">SECTION {STEPS[step].number}</p>
-            <h1 className="text-3xl font-black tracking-tight mb-4 text-accent">{STEPS[step].label}</h1>
-            <div className="border-t border-accent/20 mb-8" />
+          <div className="flex-1 p-8 overflow-y-auto">
+            <div className="mb-8">
+              <p className="text-[10px] font-bold tracking-[0.2em] mb-1 text-accent/40">SECTION {STEPS[step].number} OF {STEPS.length}</p>
+              <h1 className="text-2xl font-black tracking-tight text-accent">{STEPS[step].label}</h1>
+              <p className="text-sm text-foreground/40 mt-1">{STEPS[step].sub}</p>
+              <div className="mt-4 h-px bg-accent/15" />
+            </div>
             {renderStep()}
           </div>
 
