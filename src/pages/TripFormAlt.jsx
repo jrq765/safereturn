@@ -279,23 +279,14 @@ export default function TripFormAlt() {
       const pdfBase64 = generatePdfBase64(planData, validContacts.filter(c => c.contact_name && c.contact_email));
       const pdfAttachment = [{ filename: `SafeReturn-TripPlan-${formData.primary_name || "Trip"}.pdf`, content: pdfBase64 }];
 
-      // Remove duplicate other_contacts from planData before saving
-      const tripPlan = await base44.entities.TripPlan.create({ ...planData, other_contacts: extraPeople });
+      // Create trip plan via service role (no login required)
+      const submitResult = await base44.functions.invoke('submitTripPlan', {
+        planData,
+        extraPeople,
+        contacts: validContacts,
+      });
+      const tripPlan = submitResult.data.tripPlan;
       const portalUrl = `${window.location.origin}/family?id=${tripPlan.id}`;
-
-      // Create emergency contact records
-      await Promise.allSettled(
-        validContacts.map(c =>
-          base44.entities.EmergencyContact.create({
-            trip_plan_id: tripPlan.id,
-            contact_name: c.contact_name,
-            contact_email: c.contact_email,
-            contact_phone: c.contact_phone,
-            relationship: c.relationship,
-            notification_sent: false,
-          })
-        )
-      );
 
       // Send to Zapier webhook
       try {
