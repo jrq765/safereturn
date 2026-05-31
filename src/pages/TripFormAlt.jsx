@@ -52,6 +52,7 @@ const INITIAL_DATA = {
   visitor_center: "",
   accommodation: "",
   primary_name: "",
+  primary_email: "",
   primary_phone: "",
   primary_age: "",
   primary_blood_type: "",
@@ -152,6 +153,7 @@ export default function TripFormAlt() {
           trip_id: tripPlan.id,
           portal_url: portalUrl,
           primary_name: formData.primary_name,
+          primary_email: formData.primary_email,
           primary_phone: formData.primary_phone,
           primary_age: formData.primary_age,
           primary_blood_type: formData.primary_blood_type,
@@ -209,6 +211,15 @@ export default function TripFormAlt() {
         </div>
       `;
       const subject = `Trip Plan Filed: ${formData.primary_name || "Traveler"} — ${formData.park_name || "Outdoor Trip"}`;
+
+      // Send confirmation copy to primary traveler
+      if (formData.primary_email) {
+        base44.functions.invoke('sendEmail', {
+          to: formData.primary_email,
+          subject: `[Your Copy] ${subject}`,
+          body: emergencyEmailBody + `<br/><br/><hr/><p style="color:#888;font-size:12px">This is your confirmation copy. Keep this email — it contains your family portal link.</p>`,
+        }).catch(() => {});
+      }
 
       const emailResults = await Promise.all(
         validContacts.map(async (c) => {
@@ -299,7 +310,7 @@ export default function TripFormAlt() {
         <>
           <div className="mb-5">
             <p className="text-xs font-bold tracking-[0.15em] uppercase text-white/60 mb-3">MAIN TRAVELER</p>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-3 mb-3">
               <div>
                 <label className="block text-xs font-bold tracking-[0.15em] mb-1.5 uppercase text-white/60">Name</label>
                 <input className={inputCls} placeholder="Full name" value={formData.primary_name} onChange={upd("primary_name")} />
@@ -312,6 +323,10 @@ export default function TripFormAlt() {
                 <label className="block text-xs font-bold tracking-[0.15em] mb-1.5 uppercase text-white/60">Age</label>
                 <input className={inputCls} placeholder="Age" value={formData.primary_age} onChange={upd("primary_age")} />
               </div>
+            </div>
+            <div>
+              <label className="block text-xs font-bold tracking-[0.15em] mb-1.5 uppercase text-white/60">Your Email <span className="text-white/30 normal-case font-normal">(required — for your confirmation copy)</span></label>
+              <input className={inputCls} type="email" placeholder="your@email.com" value={formData.primary_email} onChange={upd("primary_email")} />
             </div>
           </div>
 
