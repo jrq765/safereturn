@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Loader2, Send, ChevronUp } from "lucide-react";
+import { Loader2, Send, ChevronUp, MapPin, Navigation } from "lucide-react";
 import { jsPDF } from "jspdf";
 import AgencyStep from "@/components/steps/AgencyStep";
 import { toast } from "sonner";
@@ -97,9 +97,33 @@ export default function TripFormAlt() {
   const [vehicles, setVehicles] = useState([{ vehicle_make: "", vehicle_model: "", vehicle_color: "", vehicle_license: "", vehicle_location: "" }]);
   const [submitting, setSubmitting] = useState(false);
 
+  const [locating, setLocating] = useState(false);
+
   const upd = (field) => (e) => setFormData(p => ({ ...p, [field]: e.target.value }));
 
   const goTo = (i) => { setStep(i); window.scrollTo({ top: 0 }); };
+
+  const useMyLocation = async () => {
+    if (!navigator.geolocation) { toast.error("Geolocation not supported"); return; }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(async ({ coords }) => {
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${coords.latitude}&lon=${coords.longitude}&format=json`, { headers: { "Accept-Language": "en" } });
+        const data = await res.json();
+        const a = data.address || {};
+        const park = a.park || a.nature_reserve || a.leisure || a.tourism || a.suburb || a.village || a.town || a.city || data.display_name.split(",")[0];
+        const county = [a.county, a.state].filter(Boolean).join(", ");
+        setFormData(p => ({
+          ...p,
+          park_name: park || p.park_name,
+          county_region: county || p.county_region,
+          last_planned_location: `${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)}`,
+        }));
+        toast.success("Location detected!");
+      } catch { toast.error("Could not resolve location."); }
+      setLocating(false);
+    }, () => { toast.error("Location access denied."); setLocating(false); });
+  };
 
   const toggleGear = (item) => {
     const list = formData.gear_checklist || [];
@@ -359,8 +383,13 @@ export default function TripFormAlt() {
               {["Hiking", "Backpacking", "Boating", "Rafting", "Fishing", "Hunting", "Camping", "Rock Climbing", "Skiing / Snowshoeing", "Mountain Biking", "Other"].map(a => <option key={a}>{a}</option>)}
             </select>
           </Field>
-          <Field label="Primary Destination">
-            <input className={inputCls} placeholder="Park, wilderness area, or location name" value={formData.park_name} onChange={upd("park_name")} />
+          <Field label="Primary Destination" hint="Enter the full name of the park, wilderness, or trailhead — e.g. 'Mount Hood National Forest, Oregon' or 'Zion National Park, Utah'. The more specific, the better.">
+            <div className="flex gap-2">
+              <input className={inputCls} placeholder="e.g. Crater Lake National Park, Oregon" value={formData.park_name} onChange={upd("park_name")} />
+              <button type="button" onClick={useMyLocation} disabled={locating} title="Auto-detect my location" className="shrink-0 flex items-center gap-1.5 px-3 py-2.5 text-xs font-bold tracking-wider text-white/70 hover:text-white border border-white/30 hover:border-white/60 rounded-lg bg-white/10 hover:bg-white/20 transition-all disabled:opacity-50">
+                {locating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Navigation className="w-4 h-4" />}
+              </button>
+            </div>
           </Field>
           <Field label="Nearest Visitor Center or Ranger Station" hint="Helps searchers know your check-in point">
             <input className={inputCls} placeholder="e.g. Crater Lake Visitor Center" value={formData.visitor_center} onChange={upd("visitor_center")} />
