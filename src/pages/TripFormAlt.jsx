@@ -57,7 +57,11 @@ const INITIAL_DATA = {
   primary_phone: "",
   primary_age: "",
   primary_blood_type: "",
-  emergency_device_type: "",
+  emergency_device_types: [],
+  emergency_device_other: "",
+  accommodation_yes: false,
+  accommodation_type: "",
+  departure_from_park_datetime: "",
   total_participants: 1,
   gear_checklist: [],
   other_equipment: "",
@@ -68,8 +72,6 @@ const INITIAL_DATA = {
   share_with_agency: true,
   confirmed_return: false,
   backup_activity: "",
-  backup_start_location: "",
-  backup_end_location: "",
 };
 
 // ─── Reusable field wrapper ──────────────────────────────────────────────────
@@ -125,12 +127,37 @@ export default function TripFormAlt() {
     }, () => { toast.error("Location access denied."); setLocating(false); });
   };
 
+  const [vehicleLocating, setVehicleLocating] = useState(false);
+
   const toggleGear = (item) => {
     const list = formData.gear_checklist || [];
     setFormData(p => ({
       ...p,
       gear_checklist: list.includes(item) ? list.filter(g => g !== item) : [...list, item],
     }));
+  };
+
+  const toggleDevice = (item) => {
+    const list = formData.emergency_device_types || [];
+    setFormData(p => ({
+      ...p,
+      emergency_device_types: list.includes(item) ? list.filter(d => d !== item) : [...list, item],
+    }));
+  };
+
+  const pinVehicleLocation = (idx) => {
+    if (!navigator.geolocation) { toast.error("Geolocation not supported"); return; }
+    setVehicleLocating(true);
+    navigator.geolocation.getCurrentPosition(async ({ coords }) => {
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${coords.latitude}&lon=${coords.longitude}&format=json`, { headers: { "Accept-Language": "en" } });
+        const data = await res.json();
+        const label = data.display_name?.split(",").slice(0, 3).join(",") || `${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)}`;
+        setVehicles(vs => vs.map((v, j) => j === idx ? { ...v, vehicle_location: label } : v));
+        toast.success("Location pinned!");
+      } catch { toast.error("Could not resolve location."); }
+      setVehicleLocating(false);
+    }, () => { toast.error("Location access denied."); setVehicleLocating(false); });
   };
 
   // ─── Submit ────────────────────────────────────────────────────────────────
@@ -397,17 +424,40 @@ export default function TripFormAlt() {
           <Field label="County / Region" hint="Important for identifying which sheriff has jurisdiction">
             <input className={inputCls} placeholder="e.g. Lane County, OR" value={formData.county_region} onChange={upd("county_region")} />
           </Field>
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Departure Date & Time">
+          <div className="bg-white/10 border border-white/20 rounded-xl p-4 mb-5 space-y-3">
+            <p className="text-xs font-bold tracking-widest text-white/50 uppercase">Trip Dates</p>
+            <div>
+              <label className="block text-xs font-bold tracking-[0.15em] mb-1 uppercase text-white/70">Departure <span className="normal-case font-normal text-white/40">— when you leave for the trailhead</span></label>
               <input type="datetime-local" className={inputCls} value={formData.departure_datetime} onChange={upd("departure_datetime")} />
-            </Field>
-            <Field label="Expected Return Date & Time">
+            </div>
+            <div>
+              <label className="block text-xs font-bold tracking-[0.15em] mb-1 uppercase text-white/70">Exit from Park <span className="normal-case font-normal text-white/40">— when you plan to leave the wilderness / trailhead</span></label>
+              <input type="datetime-local" className={inputCls} value={formData.departure_from_park_datetime} onChange={upd("departure_from_park_datetime")} />
+            </div>
+            <div>
+              <label className="block text-xs font-bold tracking-[0.15em] mb-1 uppercase text-white/70">Expected Return Home <span className="normal-case font-normal text-white/40">— if overdue by this time, contacts should alert authorities</span></label>
               <input type="datetime-local" className={inputCls} value={formData.expected_return_datetime} onChange={upd("expected_return_datetime")} />
-            </Field>
+            </div>
           </div>
-          <Field label="Accommodation" hint="Where will you sleep? (e.g. base camp, lodge name, dispersed camping)">
-            <input className={inputCls} placeholder="e.g. Backcountry campsite near Mirror Lake" value={formData.accommodation} onChange={upd("accommodation")} />
-          </Field>
+          <div className="mb-5">
+            <label className="block text-xs font-bold tracking-[0.15em] mb-2 uppercase text-white/70">Are you staying overnight?</label>
+            <div className="flex gap-3 mb-3">
+              {[{ label: "Yes", val: true }, { label: "No — day trip", val: false }].map(({ label, val }) => (
+                <button key={label} type="button" onClick={() => setFormData(p => ({ ...p, accommodation_yes: val }))}
+                  className={`flex-1 py-2.5 rounded-lg border text-sm font-semibold transition-all ${
+                    formData.accommodation_yes === val
+                      ? "bg-white/25 border-white/60 text-white"
+                      : "bg-white/5 border-white/20 text-white/50 hover:bg-white/15"
+                  }`}>{label}</button>
+              ))}
+            </div>
+            {formData.accommodation_yes && (
+              <select className={selectCls} value={formData.accommodation_type} onChange={upd("accommodation_type")}>
+                <option value="">Select accommodation type...</option>
+                {["Tent / Campsite (developed)", "Backpacking / Dispersed camping", "Lodge or Hotel", "Cabin", "RV / Vehicle camping", "Hut or Shelter", "Other"].map(a => <option key={a}>{a}</option>)}
+              </select>
+            )}
+          </div>
         </>
       );
 
@@ -417,20 +467,10 @@ export default function TripFormAlt() {
           <Field label="Route / Trail Notes" hint="Include trailhead, key waypoints, turnaround points, and alternate routes">
             <textarea className={`${textareaCls} h-36`} placeholder="e.g. Start at Timberline Lodge TH, summit via Wy'east route, turnaround by 2pm regardless of progress..." value={formData.route_notes} onChange={upd("route_notes")} />
           </Field>
-          <Field label="Last Planned Location / Furthest Point" hint="If searchers can only check one place, where should they look first?">
-            <input className={inputCls} placeholder="e.g. Summit of South Sister, or Mile Marker 12 on PCT" value={formData.last_planned_location} onChange={upd("last_planned_location")} />
-          </Field>
           <Field label="Backup / Alternate Activity" hint="If weather or conditions force a change, what's your alternative?">
             <input className={inputCls} placeholder="e.g. Day hike to Proxy Falls instead" value={formData.backup_activity} onChange={upd("backup_activity")} />
           </Field>
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Backup Start Location">
-              <input className={inputCls} placeholder="Alternate trailhead or put-in" value={formData.backup_start_location} onChange={upd("backup_start_location")} />
-            </Field>
-            <Field label="Backup End Location">
-              <input className={inputCls} placeholder="Alternate takeout or endpoint" value={formData.backup_end_location} onChange={upd("backup_end_location")} />
-            </Field>
-          </div>
+
         </>
       );
 
@@ -459,19 +499,29 @@ export default function TripFormAlt() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 mb-5">
-            <Field label="Blood Type (optional)">
-              <select className={selectCls} value={formData.primary_blood_type} onChange={upd("primary_blood_type")}>
-                <option value="">Select...</option>
-                {["A+","A-","B+","B-","AB+","AB-","O+","O-","Unknown"].map(bt => <option key={bt}>{bt}</option>)}
-              </select>
-            </Field>
-            <Field label="Emergency Device" hint="Helps rescuers find you faster">
-              <select className={selectCls} value={formData.emergency_device_type} onChange={upd("emergency_device_type")}>
-                <option value="">None / Unknown</option>
-                {["Satellite communicator (Garmin inReach)", "Satellite communicator (SPOT)", "Personal Locator Beacon (PLB)", "Avalanche Transceiver", "Satellite phone", "Other"].map(d => <option key={d}>{d}</option>)}
-              </select>
-            </Field>
+          <div className="mb-5">
+            <label className="block text-xs font-bold tracking-[0.15em] mb-2 uppercase text-white/70">Emergency Communication Device <span className="normal-case font-normal text-white/40">(select all that apply)</span></label>
+            <div className="grid grid-cols-1 gap-2">
+              {["Satellite communicator (Garmin inReach)", "Satellite communicator (SPOT)", "Personal Locator Beacon (PLB)", "Avalanche Transceiver", "Satellite phone", "Other"].map(d => {
+                const checked = (formData.emergency_device_types || []).includes(d);
+                return (
+                  <button key={d} type="button" onClick={() => toggleDevice(d)}
+                    className={`flex items-center gap-3 px-4 py-2.5 border rounded-lg text-sm text-left transition-all ${
+                      checked ? "border-white/60 bg-white/20 text-white" : "border-white/20 bg-white/5 text-white/50 hover:border-white/40 hover:text-white/70"
+                    }`}>
+                    <div className={`w-4 h-4 shrink-0 rounded border flex items-center justify-center ${
+                      checked ? "bg-white border-white" : "border-white/30"
+                    }`}>
+                      {checked && <svg viewBox="0 0 10 8" className="w-2.5 h-2.5 fill-accent"><path d="M1 4l3 3 5-6"/></svg>}
+                    </div>
+                    {d}
+                  </button>
+                );
+              })}
+              {(formData.emergency_device_types || []).includes("Other") && (
+                <input className={inputCls} placeholder="Describe your device..." value={formData.emergency_device_other} onChange={upd("emergency_device_other")} />
+              )}
+            </div>
           </div>
 
           {extraPeople.length > 0 && (
@@ -483,16 +533,20 @@ export default function TripFormAlt() {
                     <span className="text-xs font-bold tracking-widest text-white/40">PERSON {i + 2}</span>
                     <button onClick={() => setExtraPeople(ps => ps.filter((_, j) => j !== i))} className="text-xs text-red-400 hover:text-red-300">REMOVE</button>
                   </div>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-3 gap-3 mb-2">
                     <input className={inputCls} placeholder="Full name" value={p.name} onChange={e => setExtraPeople(ps => ps.map((x, j) => j === i ? { ...x, name: e.target.value } : x))} />
                     <input className={inputCls} placeholder="Phone" value={p.phone} onChange={e => setExtraPeople(ps => ps.map((x, j) => j === i ? { ...x, phone: e.target.value } : x))} />
                     <input className={inputCls} placeholder="Age" value={p.age} onChange={e => setExtraPeople(ps => ps.map((x, j) => j === i ? { ...x, age: e.target.value } : x))} />
                   </div>
+                  <input className={inputCls} type="email" placeholder="Email (optional)" value={p.email || ""} onChange={e => setExtraPeople(ps => ps.map((x, j) => j === i ? { ...x, email: e.target.value } : x))} />
                 </div>
               ))}
             </div>
           )}
-          <button onClick={() => setExtraPeople(ps => [...ps, { name: "", phone: "", age: "" }])} className="text-xs font-bold tracking-widest text-white/50 hover:text-white transition-colors">
+          <div className="mt-4 bg-blue-500/10 border border-blue-400/30 rounded-xl p-4">
+            <p className="text-xs text-blue-200/80 leading-relaxed">Each additional traveler should also file their own SafeReturn plan so responders have accurate, individualized information for every person in your group.</p>
+          </div>
+          <button onClick={() => setExtraPeople(ps => [...ps, { name: "", phone: "", age: "", email: "" }])} className="text-xs font-bold tracking-widest text-white/50 hover:text-white transition-colors mt-4 block">
             + Add Another Traveler
           </button>
         </>
@@ -501,9 +555,10 @@ export default function TripFormAlt() {
       // ── 04 Contacts ─────────────────────────────────────────────────────────
       case 3: return (
         <>
-          <p className="text-sm text-white/60 mb-5 leading-relaxed">
-            These people will receive an email with your trip details and a link to monitor your status. They are responsible for alerting authorities if you do not return.
-          </p>
+          <div className="bg-amber-500/10 border border-amber-400/30 rounded-xl p-4 mb-5">
+            <p className="text-xs font-bold tracking-widest text-amber-300 uppercase mb-1">Emergency Contacts</p>
+            <p className="text-sm text-white/70 leading-relaxed">These contacts will immediately receive an email with your full trip details, including the local Search and Rescue agency phone number. <strong className="text-white">They are responsible for calling authorities if you do not return.</strong></p>
+          </div>
           {contacts.map((c, i) => (
             <div key={i} className="border border-white/20 bg-white/10 rounded-xl p-4 mb-3">
               <div className="flex justify-between items-center mb-3">
@@ -524,8 +579,11 @@ export default function TripFormAlt() {
                     <option value="spouse">Spouse / Partner</option>
                     <option value="friend">Friend</option>
                     <option value="colleague">Colleague</option>
-                    <option value="other">Other</option>
+                    <option value="other">Other (write in)</option>
                   </select>
+                  {c.relationship === "other" && (
+                    <input className={`${inputCls} mt-2`} placeholder="e.g. Hiking partner, neighbor..." value={c.relationship_custom || ""} onChange={e => setContacts(cs => cs.map((x, j) => j === i ? { ...x, relationship_custom: e.target.value } : x))} />
+                  )}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -582,7 +640,12 @@ export default function TripFormAlt() {
               </div>
               <div>
                 <label className="block text-xs font-bold tracking-[0.15em] mb-1.5 uppercase text-white/60">Parking Location / Trailhead</label>
-                <input className={inputCls} placeholder="e.g. Timberline Lodge upper lot, east end" value={v.vehicle_location} onChange={e => setVehicles(vs => vs.map((x, j) => j === i ? { ...x, vehicle_location: e.target.value } : x))} />
+                <div className="flex gap-2">
+                  <input className={inputCls} placeholder="e.g. Timberline Lodge upper lot, east end" value={v.vehicle_location} onChange={e => setVehicles(vs => vs.map((x, j) => j === i ? { ...x, vehicle_location: e.target.value } : x))} />
+                  <button type="button" onClick={() => pinVehicleLocation(i)} disabled={vehicleLocating} title="Pin my current location" className="shrink-0 px-3 py-2.5 border border-white/30 hover:border-white/60 rounded-lg bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-all disabled:opacity-50">
+                    {vehicleLocating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Navigation className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
             </div>
           ))}
@@ -631,9 +694,17 @@ export default function TripFormAlt() {
       // ── 07 Medical ──────────────────────────────────────────────────────────
       case 6: return (
         <>
-          <p className="text-sm text-white/60 mb-5 leading-relaxed">
-            This information is shared with your emergency contacts so they can brief first responders quickly.
-          </p>
+          <div className="bg-white/10 border border-white/20 rounded-xl p-4 mb-5">
+            <p className="text-xs text-white/60 leading-relaxed">This information applies to <strong className="text-white">{formData.primary_name || "you"}</strong> only. Additional travelers should file their own plan with their own medical details.</p>
+          </div>
+          <div className="mb-5">
+            <Field label="Blood Type" hint="Optional — helps paramedics act faster">
+              <select className={selectCls} value={formData.primary_blood_type} onChange={upd("primary_blood_type")}>
+                <option value="">Unknown / prefer not to say</option>
+                {["A+","A-","B+","B-","AB+","AB-","O+","O-"].map(bt => <option key={bt}>{bt}</option>)}
+              </select>
+            </Field>
+          </div>
           <div className="grid grid-cols-2 gap-4">
             <Field label="Allergies">
               <input className={inputCls} placeholder="e.g. Penicillin, bee stings, shellfish" value={formData.allergies} onChange={upd("allergies")} />
