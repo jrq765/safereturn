@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Loader2, Send, ChevronUp } from "lucide-react";
+import { jsPDF } from "jspdf";
 import AgencyStep from "@/components/steps/AgencyStep";
 import { toast } from "sonner";
 import formatTripEmail from "@/utils/formatTripEmail";
@@ -109,6 +110,101 @@ export default function TripFormAlt() {
   };
 
   // ─── Submit ────────────────────────────────────────────────────────────────
+  const generatePdfBase64 = (planData, validContacts) => {
+    const doc = new jsPDF();
+    const lh = 7;
+    let y = 20;
+    const line = (text, indent = 20) => {
+      const lines = doc.splitTextToSize(String(text || "—"), 170 - (indent - 20));
+      doc.text(lines, indent, y);
+      y += lh * lines.length;
+    };
+    const section = (title) => {
+      y += 4;
+      doc.setFillColor(30, 80, 140);
+      doc.rect(15, y - 5, 180, 8, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.text(title, 20, y);
+      doc.setTextColor(0, 0, 0);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      y += lh + 2;
+    };
+    const field = (label, value) => {
+      doc.setFont("helvetica", "bold");
+      doc.text(label + ":", 20, y);
+      doc.setFont("helvetica", "normal");
+      const lines = doc.splitTextToSize(String(value || "—"), 135);
+      doc.text(lines, 65, y);
+      y += lh * Math.max(1, lines.length);
+    };
+
+    // Title
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(30, 80, 140);
+    doc.text("SafeReturn — Trip Plan", 20, y);
+    y += 10;
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Generated: ${moment().format("MMMM D, YYYY [at] h:mm A")}`, 20, y);
+    y += 10;
+    doc.setTextColor(0, 0, 0);
+
+    section("MISSION");
+    field("Activity", planData.travel_method);
+    field("Destination", planData.park_name);
+    field("County / Region", planData.county_region);
+    field("Visitor Center", planData.visitor_center);
+    field("Accommodation", planData.accommodation);
+    field("Departure", planData.departure_datetime ? moment(planData.departure_datetime).format("MMM D, YYYY h:mm A") : "—");
+    field("Expected Return", planData.expected_return_datetime ? moment(planData.expected_return_datetime).format("MMM D, YYYY h:mm A") : "—");
+
+    section("ROUTE");
+    field("Route Notes", planData.route_notes);
+    field("Last Planned Location", planData.last_planned_location);
+    field("Backup Activity", planData.backup_activity);
+    field("Backup Start", planData.backup_start_location);
+    field("Backup End", planData.backup_end_location);
+
+    section("PEOPLE");
+    field("Primary Traveler", planData.primary_name);
+    field("Email", planData.primary_email);
+    field("Phone", planData.primary_phone);
+    field("Age", planData.primary_age);
+    field("Blood Type", planData.primary_blood_type);
+    field("Emergency Device", planData.emergency_device_type);
+    if (planData.other_contacts?.length > 0) {
+      planData.other_contacts.forEach((p, i) => {
+        field(`Traveler ${i + 2}`, `${p.name}, Age ${p.age}, ${p.phone}`);
+      });
+    }
+
+    section("EMERGENCY CONTACTS");
+    validContacts.forEach((c, i) => {
+      field(`Contact ${i + 1}`, `${c.contact_name} (${c.relationship}) — ${c.contact_phone} / ${c.contact_email}`);
+    });
+
+    section("VEHICLE");
+    field("Make / Model", `${planData.vehicle_color} ${planData.vehicle_make} ${planData.vehicle_model}`.trim());
+    field("License Plate", planData.vehicle_license);
+
+    section("GEAR");
+    field("Checklist", (planData.gear_checklist || []).join(", "));
+    field("Other Equipment", planData.other_equipment);
+
+    section("MEDICAL");
+    field("Allergies", planData.allergies);
+    field("Medications", planData.medications);
+    field("Conditions", planData.medical_conditions);
+    field("Emergency Notes", planData.emergency_medical_notes);
+
+    return doc.output("datauristring").split(",")[1]; // base64 only
+  };
+
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
@@ -122,7 +218,6 @@ export default function TripFormAlt() {
       const planData = {
         ...formData,
         status: "active",
-        other_contacts: extraPeople,
         vehicle_make: vehicles[0]?.vehicle_make || "",
         vehicle_model: vehicles[0]?.vehicle_model || "",
         vehicle_color: vehicles[0]?.vehicle_color || "",
@@ -130,7 +225,11 @@ export default function TripFormAlt() {
         authority_contacts: [],
       };
 
-      const tripPlan = await base44.entities.TripPlan.create(planData);
+      const pdfBase64 = generatePdfBase64(planData, validContacts.filter(c => c.contact_name && c.contact_email));
+      const pdfAttachment = [{ filename: `SafeReturn-TripPlan-${formData.primary_name || "Trip"}.pdf`, content: pdfBase64 }];
+
+      // Remove duplicate other_contacts from planData before saving
+      const tripPlan = await base44.entities.TripPlan.create({ ...planData, other_contacts: extraPeople });
       const portalUrl = `${window.location.origin}/family?id=${tripPlan.id}`;
 
       // Create emergency contact records
@@ -218,13 +317,14 @@ export default function TripFormAlt() {
           to: formData.primary_email,
           subject: `[Your Copy] ${subject}`,
           body: emergencyEmailBody + `<br/><br/><hr/><p style="color:#888;font-size:12px">This is your confirmation copy. Keep this email — it contains your family portal link.</p>`,
+          attachments: pdfAttachment,
         }).catch(() => {});
       }
 
       const emailResults = await Promise.all(
         validContacts.map(async (c) => {
           try {
-            const result = await base44.functions.invoke('sendEmail', { to: c.contact_email, subject, body: emergencyEmailBody });
+            const result = await base44.functions.invoke('sendEmail', { to: c.contact_email, subject, body: emergencyEmailBody, attachments: pdfAttachment });
             return { name: c.contact_name, to: c.contact_email, type: "contact", success: result?.data?.success === true, error: null };
           } catch (err) {
             return { name: c.contact_name, to: c.contact_email, type: "contact", success: false, error: err?.message };

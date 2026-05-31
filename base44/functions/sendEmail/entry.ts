@@ -2,7 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 Deno.serve(async (req) => {
   try {
-    const { to, subject, body } = await req.json();
+    const { to, subject, body, attachments } = await req.json();
     if (!to || !subject || !body) {
       return Response.json({ error: 'Missing required fields: to, subject, body' }, { status: 400 });
     }
@@ -23,6 +23,7 @@ Deno.serve(async (req) => {
         to: [to],
         subject,
         html: body,
+        ...(attachments && attachments.length > 0 ? { attachments } : {}),
       }),
     });
 
