@@ -69,7 +69,7 @@ export default function Home() {
               animate={{ scale: [1, 1.15, 1], opacity: [0.4, 0, 0.4] }}
               transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
             />
-            <span className="relative z-10">Yes, lets go!</span>
+            <span className="relative z-10">Yes, let's go!</span>
           </motion.button>
 
           <motion.p
