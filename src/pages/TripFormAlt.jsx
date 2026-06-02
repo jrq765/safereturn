@@ -470,20 +470,20 @@ export default function TripFormAlt() {
         <>
           <div className="mb-5">
             <p className="text-xs font-bold tracking-[0.15em] uppercase text-white/60 mb-3">MAIN TRAVELER</p>
-            <div className="grid grid-cols-3 gap-3 mb-3">
-              <div>
-                <label className="block text-xs font-bold tracking-[0.15em] mb-1.5 uppercase text-white/60">Name</label>
-                <input className={inputCls} placeholder="Full name" value={formData.primary_name} onChange={upd("primary_name")} />
-              </div>
-              <div>
-                <label className="block text-xs font-bold tracking-[0.15em] mb-1.5 uppercase text-white/60">Phone</label>
-                <input className={inputCls} placeholder="+1 555 000 0000" value={formData.primary_phone} onChange={upd("primary_phone")} />
-              </div>
-              <div>
-                <label className="block text-xs font-bold tracking-[0.15em] mb-1.5 uppercase text-white/60">Age</label>
-                <input className={inputCls} placeholder="Age" value={formData.primary_age} onChange={upd("primary_age")} />
-              </div>
-            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+                      <div>
+                        <label className="block text-xs font-bold tracking-[0.15em] mb-1.5 uppercase text-white/60">Name</label>
+                        <input className={inputCls} placeholder="Full name" value={formData.primary_name} onChange={upd("primary_name")} />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold tracking-[0.15em] mb-1.5 uppercase text-white/60">Phone</label>
+                        <input className={inputCls} placeholder="+1 555 000 0000" value={formData.primary_phone} onChange={upd("primary_phone")} />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold tracking-[0.15em] mb-1.5 uppercase text-white/60">Age</label>
+                        <input className={inputCls} placeholder="Age" value={formData.primary_age} onChange={upd("primary_age")} />
+                      </div>
+                    </div>
             <div>
               <label className="block text-xs font-bold tracking-[0.15em] mb-1.5 uppercase text-white/60">Your Email <span className="text-white/30 normal-case font-normal">(required — for your confirmation copy)</span></label>
               <input className={inputCls} type="email" placeholder="your@email.com" value={formData.primary_email} onChange={upd("primary_email")} />
@@ -524,7 +524,7 @@ export default function TripFormAlt() {
                     <span className="text-xs font-bold tracking-widest text-white/40">PERSON {i + 2}</span>
                     <button onClick={() => setExtraPeople(ps => ps.filter((_, j) => j !== i))} className="text-xs text-red-400 hover:text-red-300">REMOVE</button>
                   </div>
-                  <div className="grid grid-cols-3 gap-3 mb-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-2">
                     <input className={inputCls} placeholder="Full name" value={p.name} onChange={e => setExtraPeople(ps => ps.map((x, j) => j === i ? { ...x, name: e.target.value } : x))} />
                     <input className={inputCls} placeholder="Phone" value={p.phone} onChange={e => setExtraPeople(ps => ps.map((x, j) => j === i ? { ...x, phone: e.target.value } : x))} />
                     <input className={inputCls} placeholder="Age" value={p.age} onChange={e => setExtraPeople(ps => ps.map((x, j) => j === i ? { ...x, age: e.target.value } : x))} />
@@ -558,7 +558,7 @@ export default function TripFormAlt() {
                   <button onClick={() => setContacts(cs => cs.filter((_, j) => j !== i))} className="text-xs text-red-400 hover:text-red-300">REMOVE</button>
                 )}
               </div>
-              <div className="grid grid-cols-2 gap-3 mb-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                 <div>
                   <label className="block text-xs font-bold tracking-[0.15em] mb-1.5 uppercase text-white/60">Full Name</label>
                   <input className={inputCls} placeholder="Jane Doe" value={c.contact_name} onChange={e => setContacts(cs => cs.map((x, j) => j === i ? { ...x, contact_name: e.target.value } : x))} />
@@ -577,7 +577,7 @@ export default function TripFormAlt() {
                   )}
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold tracking-[0.15em] mb-1.5 uppercase text-white/60">Phone Number</label>
                   <input className={inputCls} placeholder="+1 555 000 0000" value={c.contact_phone} onChange={e => setContacts(cs => cs.map((x, j) => j === i ? { ...x, contact_phone: e.target.value } : x))} />
@@ -609,8 +609,8 @@ export default function TripFormAlt() {
                   <button onClick={() => setVehicles(vs => vs.filter((_, j) => j !== i))} className="text-xs text-red-400 hover:text-red-300">REMOVE</button>
                 )}
               </div>
-              <div className="grid grid-cols-2 gap-3 mb-3">
-                <div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+              <div>
                   <label className="block text-xs font-bold tracking-[0.15em] mb-1.5 uppercase text-white/60">Make</label>
                   <input className={inputCls} placeholder="Toyota" value={v.vehicle_make} onChange={e => setVehicles(vs => vs.map((x, j) => j === i ? { ...x, vehicle_make: e.target.value } : x))} />
                 </div>
@@ -619,8 +619,8 @@ export default function TripFormAlt() {
                   <input className={inputCls} placeholder="4Runner" value={v.vehicle_model} onChange={e => setVehicles(vs => vs.map((x, j) => j === i ? { ...x, vehicle_model: e.target.value } : x))} />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3 mb-3">
-                <div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+              <div>
                   <label className="block text-xs font-bold tracking-[0.15em] mb-1.5 uppercase text-white/60">Color</label>
                   <input className={inputCls} placeholder="Silver" value={v.vehicle_color} onChange={e => setVehicles(vs => vs.map((x, j) => j === i ? { ...x, vehicle_color: e.target.value } : x))} />
                 </div>
@@ -652,7 +652,7 @@ export default function TripFormAlt() {
           <p className="text-sm text-white/60 mb-5 leading-relaxed">
             Check everything you are bringing. This helps rescuers assess your survival capability if you are overdue.
           </p>
-          <div className="grid grid-cols-2 gap-2 mb-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-5">
             {GEAR_ITEMS.map(item => {
               const checked = (formData.gear_checklist || []).includes(item);
               return (
@@ -696,7 +696,7 @@ export default function TripFormAlt() {
               </select>
             </Field>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Allergies">
               <input className={inputCls} placeholder="e.g. Penicillin, bee stings, shellfish" value={formData.allergies} onChange={upd("allergies")} />
             </Field>
@@ -765,8 +765,8 @@ export default function TripFormAlt() {
           <>
             <div className="border border-white/20 rounded-xl overflow-hidden mb-5">
               {summaryRows.map(([label, value], i) => (
-                <div key={label} className={`flex gap-4 px-5 py-3 text-sm ${i % 2 === 0 ? "bg-white/10" : "bg-white/5"}`}>
-                  <span className="text-xs font-bold tracking-[0.12em] uppercase text-white/40 w-36 shrink-0 pt-0.5">{label}</span>
+                <div key={label} className={`flex flex-col sm:flex-row gap-1 sm:gap-4 px-4 py-3 text-sm ${i % 2 === 0 ? "bg-white/10" : "bg-white/5"}`}>
+                  <span className="text-xs font-bold tracking-[0.12em] uppercase text-white/40 sm:w-36 shrink-0">{label}</span>
                   <span className="text-white/80 break-words">{value}</span>
                 </div>
               ))}
@@ -826,8 +826,8 @@ export default function TripFormAlt() {
         </motion.div>
       </AnimatePresence>
 
-      {/* Side dots nav */}
-      <div className="fixed right-6 top-1/2 -translate-y-1/2 z-50 flex flex-col gap-2.5">
+      {/* Side dots nav — hidden on mobile */}
+      <div className="hidden md:flex fixed right-6 top-1/2 -translate-y-1/2 z-50 flex-col gap-2.5">
         {STEPS.map((s, i) => (
           <button key={s.id} onClick={() => goTo(i)} title={s.label} className="group flex items-center gap-2 justify-end">
             <span className={`text-xs font-medium transition-all duration-300 text-white ${step === i ? "opacity-100 font-bold" : "opacity-40 hover:opacity-80"}`}>{s.label}</span>
@@ -836,8 +836,8 @@ export default function TripFormAlt() {
         ))}
       </div>
 
-      {/* Step number indicator */}
-      <div className="fixed left-6 top-1/2 -translate-y-1/2 z-50">
+      {/* Step number indicator — hidden on mobile */}
+      <div className="hidden md:block fixed left-6 top-1/2 -translate-y-1/2 z-50">
         <AnimatePresence mode="wait">
           <motion.div
             key={step}
@@ -854,8 +854,19 @@ export default function TripFormAlt() {
         </AnimatePresence>
       </div>
 
+      {/* Mobile step indicator */}
+      <div className="md:hidden fixed top-16 left-0 right-0 z-40 px-4 pt-2">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-white/60 tracking-widest">{STEPS[step]?.number}</span>
+          <div className="flex-1 h-1 bg-white/20 rounded-full overflow-hidden">
+            <div className="h-full bg-white/70 rounded-full transition-all duration-500" style={{ width: `${((step + 1) / STEPS.length) * 100}%` }} />
+          </div>
+          <span className="text-xs text-white/50">{step + 1}/{STEPS.length}</span>
+        </div>
+      </div>
+
       {/* Main content */}
-      <div className="relative z-10 min-h-screen flex flex-col justify-center items-center px-4 py-24">
+      <div className="relative z-10 min-h-screen flex flex-col justify-center items-center px-4 py-24 md:py-24 pt-28">
         <div className="w-full max-w-2xl mx-auto">
 
           {/* Step header */}

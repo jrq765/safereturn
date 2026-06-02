@@ -35,9 +35,9 @@ export default function Home() {
         subtitle="ready"
         scrollToExpand="Scroll to explore"
       >
-        <div className="flex flex-col items-center justify-center text-center gap-8 py-8">
+        <div className="flex flex-col items-center justify-center text-center gap-6 py-8 px-4">
           <motion.h2
-            className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground"
+            className="text-2xl md:text-4xl lg:text-5xl font-bold text-foreground"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
@@ -56,7 +56,7 @@ export default function Home() {
 
           <motion.button
             onClick={goToForm}
-            className="relative px-12 py-5 text-xl font-bold text-white rounded-2xl bg-primary overflow-hidden"
+            className="relative px-8 py-4 text-lg font-bold text-white rounded-2xl bg-primary overflow-hidden w-full max-w-xs"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5, delay: 0.6 }}
