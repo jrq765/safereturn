@@ -164,15 +164,22 @@ export default function TripFormAlt() {
   const generatePdfBase64 = (planData, validContacts) => {
     const doc = new jsPDF();
     const lh = 7;
+    const pageH = doc.internal.pageSize.getHeight();
+    const marginBottom = 20;
     let y = 20;
-    const line = (text, indent = 20) => {
-      const lines = doc.splitTextToSize(String(text || "—"), 170 - (indent - 20));
-      doc.text(lines, indent, y);
-      y += lh * lines.length;
+
+    const checkPageBreak = (needed = 14) => {
+      if (y + needed > pageH - marginBottom) {
+        doc.addPage();
+        y = 20;
+      }
     };
+
     const section = (title) => {
+      checkPageBreak(16);
       y += 4;
-      doc.setFillColor(30, 80, 140);
+      // App green: hsl(148, 94%, 13%) ≈ rgb(2, 64, 33)
+      doc.setFillColor(2, 64, 33);
       doc.rect(15, y - 5, 180, 8, "F");
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(10);
@@ -183,19 +190,21 @@ export default function TripFormAlt() {
       doc.setFontSize(10);
       y += lh + 2;
     };
+
     const field = (label, value) => {
+      const lines = doc.splitTextToSize(String(value || "—"), 130);
+      checkPageBreak(lh * lines.length + 2);
       doc.setFont("helvetica", "bold");
       doc.text(label + ":", 20, y);
       doc.setFont("helvetica", "normal");
-      const lines = doc.splitTextToSize(String(value || "—"), 135);
-      doc.text(lines, 65, y);
+      doc.text(lines, 70, y);
       y += lh * Math.max(1, lines.length);
     };
 
     // Title
     doc.setFontSize(18);
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(30, 80, 140);
+    doc.setTextColor(2, 64, 33);
     doc.text("SafeReturn — Trip Plan", 20, y);
     y += 10;
     doc.setFontSize(10);
