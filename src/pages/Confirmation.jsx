@@ -1,12 +1,29 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, ArrowRight, Shield } from "lucide-react";
+import { CheckCircle, ArrowRight, Shield, Download } from "lucide-react";
 
 const bgImage = "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&auto=format&fit=crop";
 
 export default function Confirmation() {
   const params = new URLSearchParams(window.location.search);
   const tripId = params.get("id");
+
+  const handleDownloadPdf = () => {
+    const stored = sessionStorage.getItem(`pdf_data_${tripId}`);
+    if (!stored) return;
+    const { base64, name } = JSON.parse(stored);
+    const byteChars = atob(base64);
+    const byteNums = new Array(byteChars.length).fill(0).map((_, i) => byteChars.charCodeAt(i));
+    const blob = new Blob([new Uint8Array(byteNums)], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `SafeReturn-TripPlan-${name}.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const hasPdf = tripId && !!sessionStorage.getItem(`pdf_data_${tripId}`);
 
   return (
     <div className="relative min-h-screen font-inter">
@@ -46,6 +63,19 @@ export default function Confirmation() {
             </li>
           </ul>
         </div>
+
+        {hasPdf && (
+          <div className="w-full mb-6">
+            <button
+              onClick={handleDownloadPdf}
+              className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded-xl border-2 border-blue-400/50 bg-blue-500/20 hover:bg-blue-500/30 text-white font-semibold transition-all hover:scale-[1.02] active:scale-95"
+            >
+              <Download className="w-5 h-5 text-blue-300" />
+              Download Your Trip Plan PDF
+            </button>
+            <p className="text-xs text-white/40 text-center mt-2">Save and share this PDF with contacts or emergency services as a backup.</p>
+          </div>
+        )}
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link to="/dashboard">

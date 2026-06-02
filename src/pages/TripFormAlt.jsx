@@ -375,6 +375,7 @@ export default function TripFormAlt() {
       );
 
       sessionStorage.setItem(`email_results_${tripPlan.id}`, JSON.stringify(emailResults));
+      sessionStorage.setItem(`pdf_data_${tripPlan.id}`, JSON.stringify({ base64: pdfBase64, name: formData.primary_name || "Trip" }));
       const successCount = emailResults.filter(r => r.success).length;
       if (successCount > 0) toast.success(`Plan filed! ${successCount} contact${successCount !== 1 ? "s" : ""} notified.`);
 
@@ -806,7 +807,7 @@ export default function TripFormAlt() {
   const video = STEP_VIDEOS[step];
 
   return (
-    <div className="relative min-h-screen font-inter overflow-hidden">
+    <div className="relative min-h-screen font-inter" style={{ overflowX: 'hidden' }}>
 
       {/* Cinematic background */}
       <AnimatePresence mode="sync">
@@ -855,7 +856,7 @@ export default function TripFormAlt() {
       </div>
 
       {/* Mobile step indicator */}
-      <div className="md:hidden fixed top-16 left-0 right-0 z-40 px-4 pt-2">
+      <div className="md:hidden fixed top-0 left-0 right-0 z-40 px-4 pt-3 pb-2 bg-black/40 backdrop-blur-sm">
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold text-white/60 tracking-widest">{STEPS[step]?.number}</span>
           <div className="flex-1 h-1 bg-white/20 rounded-full overflow-hidden">
@@ -866,7 +867,7 @@ export default function TripFormAlt() {
       </div>
 
       {/* Main content */}
-      <div className="relative z-10 min-h-screen flex flex-col justify-center items-center px-4 py-24 md:py-24 pt-28">
+      <div className="relative z-10 min-h-screen flex flex-col justify-center items-center px-4 pt-16 pb-16 md:pt-24 md:pb-24 md:px-24 lg:px-40">
         <div className="w-full max-w-2xl mx-auto">
 
           {/* Step header */}
