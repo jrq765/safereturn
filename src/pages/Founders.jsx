@@ -14,7 +14,7 @@ const FOUNDERS = [
     name: "Sebastian Morse",
     linkedin: "https://www.linkedin.com/in/sebastian-morse/",
     image: "https://media.base44.com/images/public/6a1b2bf2fc37b8175a269ec2/b62879853_image.png",
-    objectPosition: "55% 15%",
+    objectPosition: "center 20%",
     objectScale: "scale-150",
     placeholder: "SM",
   },
