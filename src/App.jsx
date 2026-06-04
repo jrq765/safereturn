@@ -19,6 +19,7 @@ import Dashboard from './pages/Dashboard';
 import Confirmation from './pages/Confirmation';
 import Profile from './pages/Profile';
 import FamilyPortal from './pages/FamilyPortal';
+import Founders from './pages/Founders';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -47,6 +48,7 @@ const AuthenticatedApp = () => {
   return (
     <Routes>
       <Route path="/family" element={<FamilyPortal />} />
+      <Route path="/founders" element={<Founders />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />

@@ -31,6 +31,7 @@ export default function Layout() {
             <Link to="/" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Home</Link>
             <Link to="/dashboard" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">My Plans</Link>
             <Link to="/new-plan" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">New Plan</Link>
+            <Link to="/founders" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Founders</Link>
           </nav>
 
           <div className="hidden md:flex items-center gap-3 relative">
@@ -79,6 +80,7 @@ export default function Layout() {
             <Link to="/" onClick={() => setMenuOpen(false)} className="block text-sm font-medium">Home</Link>
             <Link to="/dashboard" onClick={() => setMenuOpen(false)} className="block text-sm font-medium">My Plans</Link>
             <Link to="/new-plan" onClick={() => setMenuOpen(false)} className="block text-sm font-medium">New Plan</Link>
+            <Link to="/founders" onClick={() => setMenuOpen(false)} className="block text-sm font-medium">Founders</Link>
             <button onClick={() => { base44.auth.logout(); }} className="text-sm text-destructive">Sign Out</button>
           </div>
         )}
