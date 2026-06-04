@@ -6,7 +6,7 @@ const FOUNDERS = [
   {
     name: "JR Quint",
     linkedin: "https://www.linkedin.com/in/jrquint/",
-    image: "https://media.licdn.com/dms/image/v2/D5603AQH6cQyXUw4VNQ/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1718214370044?e=1754524800&v=beta&t=placeholder",
+    image: "https://media.base44.com/images/public/6a1b2bf2fc37b8175a269ec2/b7f610b14_ChatGPTImageMay27202603_26_03PM.png",
     placeholder: "JQ",
   },
   {
