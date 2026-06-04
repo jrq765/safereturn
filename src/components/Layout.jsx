@@ -18,7 +18,7 @@ export default function Layout() {
   return (
     <div className="min-h-screen bg-background font-inter">
       <header className="sticky top-0 z-50 bg-white border-b border-border">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between relative">
           <Link to="/" className="flex items-center gap-2">
             <img
               src="https://media.base44.com/images/public/6a1b2bf2fc37b8175a269ec2/9871eacf4_safe_return.svg"
@@ -27,7 +27,7 @@ export default function Layout() {
             />
           </Link>
 
-          <nav className="hidden md:flex items-center gap-6">
+          <nav className="hidden md:flex items-center gap-6 absolute left-1/2 -translate-x-1/2">
             <Link to="/" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Home</Link>
             <Link to="/dashboard" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">My Plans</Link>
             <Link to="/new-plan" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">New Plan</Link>
