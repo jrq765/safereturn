@@ -7,18 +7,21 @@ const FOUNDERS = [
     name: "JR Quint",
     linkedin: "https://www.linkedin.com/in/jrquint/",
     image: "https://media.base44.com/images/public/6a1b2bf2fc37b8175a269ec2/b7f610b14_ChatGPTImageMay27202603_26_03PM.png",
+    objectPosition: "center top",
     placeholder: "JQ",
   },
   {
     name: "Sebastian Morse",
     linkedin: "https://www.linkedin.com/in/sebastian-morse/",
-    image: null,
+    image: "https://media.base44.com/images/public/6a1b2bf2fc37b8175a269ec2/b62879853_image.png",
+    objectPosition: "center top",
     placeholder: "SM",
   },
   {
     name: "Craig Chisholm",
     linkedin: "https://www.linkedin.com/in/craig-chisholm03/",
-    image: null,
+    image: "https://media.base44.com/images/public/6a1b2bf2fc37b8175a269ec2/e44e3318b_image.png",
+    objectPosition: "center top",
     placeholder: "CC",
   },
 ];
@@ -47,7 +50,7 @@ export default function Founders() {
             >
               <div className="w-28 h-28 rounded-full border-2 border-white/30 overflow-hidden mb-5 flex items-center justify-center bg-white/10">
                 {founder.image ? (
-                  <img src={founder.image} alt={founder.name} className="w-full h-full object-cover" onError={e => { e.target.style.display = 'none'; }} />
+                  <img src={founder.image} alt={founder.name} className="w-full h-full object-cover" style={{ objectPosition: founder.objectPosition || "center center" }} onError={e => { e.target.style.display = 'none'; }} />
                 ) : (
                   <span className="text-3xl font-bold text-white/70">{founder.placeholder}</span>
                 )}
